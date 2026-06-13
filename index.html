@@ -708,27 +708,7 @@
       mainCategories:[...defaultMain],
       assetClasses:[...defaultAsset],
       accounts: structuredClone(presetAccounts),
-      entries:[
-        {id:"e1", month:"2025-12", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:950000, rate:1, memo:""},
-        {id:"e2", month:"2025-12", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2200000, rate:1, memo:""},
-        {id:"e3", month:"2026-01", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1000000, rate:1, memo:""},
-        {id:"e4", month:"2026-01", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2300000, rate:1, memo:""},
-        {id:"e5", month:"2026-02", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1050000, rate:1, memo:""},
-        {id:"e6", month:"2026-02", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2400000, rate:1, memo:""},
-        {id:"e7", month:"2026-03", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1120000, rate:1, memo:""},
-        {id:"e8", month:"2026-03", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2520000, rate:1, memo:""},
-        {id:"e9", month:"2026-04", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1160000, rate:1, memo:""},
-        {id:"e10", month:"2026-04", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2650000, rate:1, memo:""},
-        {id:"e11", month:"2026-05", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1200000, rate:1, memo:""},
-        {id:"e12", month:"2026-05", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2780000, rate:1, memo:""},
-        {id:"e13", month:"2026-06", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1250000, rate:1, memo:""},
-        {id:"e14", month:"2026-06", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2900000, rate:1, memo:""},
-        {id:"e15", month:"2026-06", owner:"晴太", accountId:"acc_sbi_stock", mainCategory:"証券口座", assetClass:"株式（個別）", type:"asset", currency:"JPY", amount:400000, rate:1, memo:""},
-        {id:"e16", month:"2026-06", owner:"晴太", accountId:"acc_enbd", mainCategory:"外貨口座", assetClass:"外貨", type:"asset", currency:"AED", amount:35000, rate:Number((157/AED_PER_USD).toFixed(2)), memo:""},
-        {id:"e17", month:"2026-06", owner:"晴太", accountId:"acc_wise_usd", mainCategory:"外貨口座", assetClass:"外貨", type:"asset", currency:"USD", amount:8000, rate:157, memo:""},
-        {id:"e18", month:"2026-06", owner:"香花", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:900000, rate:1, memo:""},
-        {id:"e19", month:"2026-06", owner:"香花", accountId:"acc_smbc_card", mainCategory:"クレジットカード", assetClass:"クレジットカード", type:"liability", currency:"JPY", amount:120000, rate:1, memo:""}
-      ]
+      entries:[]
     };
 
     let data = load();
@@ -1050,7 +1030,7 @@
     function setAreaRange(range){ areaRange=range; updateRangeTabs(); renderAreaChartCard(); }
     function updateRangeTabs(){
       const map={ "3ヶ月":"3m","6ヶ月":"6m","1年":"1y","3年":"3y","5年":"5y","全期間":"all" };
-      document.querySelectorAll(".range-tab").forEach(b=>b.classList.toggle("active", map[b.textContent]===areaRange));
+      document.querySelectorAll("#dashboard .range-tab").forEach(b=>b.classList.toggle("active", map[b.textContent]===areaRange));
     }
 
     function pieData(){
@@ -1410,32 +1390,69 @@
       activeDashboardMonth=latestSelectableMonth();
       activeListMonth=latestSelectableMonth();
       render(); showTab("dashboard");
+      pushToCloud(true); // if synced, clear the cloud (and other devices) too
       toast("データをリセットしました");
     }
 
     /* ---------- modals ---------- */
-    function assetSeriesForAccount(accountId, owner, endMonth){
-      const months=selectableMonths().filter(m=>compareMonth(m,endMonth)<=0);
-      return months.map(m=>{
+    let assetModalRange = "all";
+    let assetModalCtx = null;
+
+    function assetSeriesForAccount(accountId, owner, endMonth, range){
+      const monthsAll = selectableMonths().filter(m=>compareMonth(m,endMonth)<=0);
+      // build full lifetime values, then trim leading zeros (before the asset first appeared)
+      let full = monthsAll.map(m=>{
         const item=snapshotEntriesUpTo(m,owner).find(e=>e.accountId===accountId);
         return { month:m, value:item?toJPY(item):0 };
-      }).filter((p,i,arr)=>p.value!==0||i===arr.length-1);
+      });
+      const firstNonZero = full.findIndex(p=>p.value!==0);
+      if(firstNonZero > 0) full = full.slice(firstNonZero);
+      // apply range window
+      let use = full;
+      if(range==="3m") use=full.slice(-3);
+      if(range==="6m") use=full.slice(-6);
+      if(range==="1y") use=full.slice(-12);
+      if(range==="3y") use=full.slice(-36);
+      if(range==="5y") use=full.slice(-60);
+      return use.length ? use : [{ month:endMonth, value:0 }];
     }
+
+    function renderAssetModalChart(){
+      if(!assetModalCtx) return;
+      const { accountId, owner, month } = assetModalCtx;
+      const series = assetSeriesForAccount(accountId, owner, month, assetModalRange);
+      const chartEl = document.getElementById("assetModalChart");
+      if(chartEl) chartEl.innerHTML = createAreaSVG(series, 520, 300);
+      document.querySelectorAll("#assetRangeTabs .range-tab").forEach(b=>{
+        b.classList.toggle("active", b.getAttribute("data-range")===assetModalRange);
+      });
+    }
+    function setAssetModalRange(range){
+      assetModalRange = range;
+      renderAssetModalChart();
+    }
+
     function openAssetModal(accountId, owner){
       const acc=accountById(accountId);
       const month=selectedListMonth();
-      const series=assetSeriesForAccount(accountId, owner, month);
+      assetModalCtx = { accountId, owner, month };
+      assetModalRange = "all";
       const latest=snapshotEntriesUpTo(month,owner).find(e=>e.accountId===accountId);
       document.getElementById("modalTitle").textContent=acc.name;
       document.getElementById("modalSubtitle").textContent=`${owner} ・ ${monthLabel(month)}時点 ・ 単体推移`;
       const lv=latest?toJPY(latest):0;
       const lt=latest?`${formatAmount(latest.amount,latest.currency)} ／ ${formatJPY(lv)}`:"データなし";
+      const tabs=[["3m","3ヶ月"],["6m","6ヶ月"],["1y","1年"],["3y","3年"],["5y","5年"],["all","全期間"]];
       document.getElementById("modalBody").innerHTML=`
         <div class="card" style="border-color:var(--line);">
           <div class="card-title num">${lt}</div>
           <div class="card-sub" style="margin-top:4px;">${acc.mainCategory} / ${acc.assetClass}</div>
-          <div class="area-wrap" style="height:300px; margin-top:14px;">${createAreaSVG(series,520,300)}</div>
+          <div id="assetModalChart" class="area-wrap" style="height:300px; margin-top:14px;"></div>
+          <div id="assetRangeTabs" class="range-tabs">
+            ${tabs.map(([r,l])=>`<button class="range-tab ${r==="all"?"active":""}" data-range="${r}" onclick="setAssetModalRange('${r}')">${l}</button>`).join("")}
+          </div>
         </div>`;
+      renderAssetModalChart();
       openModal();
     }
     function openChartModal(type){
