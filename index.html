@@ -2,645 +2,273 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#e9eff8" />
-  <title>Ogura Family Finance v25</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#f5f6f8" />
+  <title>Ogura Family Finance</title>
+
+  <!-- PWA / iOS home-screen -->
+  <link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%20%22Ogura%20Family%20Finance%22%2C%20%22short_name%22%3A%20%22Finance%22%2C%20%22start_url%22%3A%20%22./%22%2C%20%22display%22%3A%20%22standalone%22%2C%20%22background_color%22%3A%20%22%23f5f6f8%22%2C%20%22theme_color%22%3A%20%22%23f5f6f8%22%2C%20%22icons%22%3A%20%5B%7B%22src%22%3A%20%22data%3Aimage/png%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAAgAAAAIACAIAAAB7GkOtAAANk0lEQVR4nO3dy25dZx3G4ZVqXQR3gAiJUsYUKGeQQFEl0gkdch8V99FhR81ZQoo4jDjMU8X2gCvoXYSBI9fYzva291rr%2B77/%2BzyzhtRe9Zben7%2B97MWdB398PQGQZ3779m3rawCggQ9aXwAAbQgAQCgBAAglAAChBAAglAAAhBIAgFACABBKAABCCQBAqHmaPAoCIJETAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChPAsIINRs/wEyeQsIIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChBAAglAAAhPIsIIBQTgAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChBAAglAAAhPIsIIBQs/0HyOQtIIBQAgAQavYOEEAmJwCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJRnAQGEcgIACCUAAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJRnAQGEcgIACDU7AABkcgIACCUAAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAI5VlAAKGcAABCCQBAKAEACCUAAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAI5VlAAKGcAABCzQ4AAJmcAABCCQBAKAEACCUAAKFm94ABMjkBAIQSAIBQAgAQSgAAQnkWEEAoJwCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQnkWEEAoJwCAULMDAEAmJwCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJQAAITyKAiAUE4AAKEEACCUAACEEgCAUAIAEEoAAELNrS8AoJk3X/3w8h/e//Q/219JE3fuPfp362sA2NSVu39Z%2BRIIABBkz%2Bk/r3AG3AMAUtxi/W/9bw1BAIAIh%2Bx41QbcuffoX62vAWBdb7766PAPcv/Tam%2BYOwEAxS2y/gt%2BnH44AQCVXbvaH3729fl/fP3lg91/v9I5wO8BAKEuTP/5P7w2AzXcufcHJwCgpjeP3/vt/5Xrf96OBtyv8tPz7gEAca5d/z3/zugEAMiy/7KXb4AAAAW9efzRjvd/Dv/gK33kjbkJDJSye51v%2Bk39h599XfiGsAAARZT5xnwz3gICKrD%2BtzC/bX0FAIc4ajH9NZZzrvIfAsQ5evyjdp%2B8wnK6BwCM59bT//rLBze6D1z4DvAkAMBYmn7X/06ZR6gJADCGpaZ//0NA7W//Jz8FBAxh2W/891n28us/OQEAnVvpPZ/d54Ad61/m/Z9JAIBurf12/%2BnK3/T/D6ASAQC6s%2BWd3hstfqVv/ycBALrSww/5vE%2Bx9Z/cBAb6Yf035gQAtNfz9E9F138SAKCtzqd/qrv%2Bk2cBAa0cPf5x60u4xr1H/2x9CetyAgC21vn0l9/9MwIAbKef6f/8i28u/MnTv/63yZU0JADARjpZ/8vTH2t2CwBY29GTEaY/bwydAIAVdTL9k2/8ryIAwCpMf/8EAFiY6R%2BFAACLMf1jEQBgGZ2sv%2BnfnwAAhzL9gxIA4PY6mf7J%2Bt%2BKZwEBt3H05CetL%2BGd5aY/bgydAICbqTj9oQQAuIFO1t/0L0IAgL2Y/noEALhGJ9M/Wf%2BlCQDwXqa/NgEArmD6EwgA8H9Mfw4BAL7Vyfqb/m0IADBNpj%2BSAEC6TqZ/sv6bEwDIZfrDeRYQJDp68nHrS3inp%2BmPG0MnAMhi%2BjkjABCkk/U3/Z0QAIhg%2BrlMAKC4TqZ/sv79mfNue0CQo6cft76EaRpl%2BvPG0AkAajL9XEsAoKAe1t/0908AoJrm62/6R/FB6wsAlmT92Z8TANTRdv1N/3AEAIpouP6mf1CeBQQVHD39aZPPW2v648bQCQCG12T9a01/qDkueVDL8ebrX3X6A8fQTwHBwKw/h/AWEAzJ9HM4AYDxbLz%2Bpr8qAYDBbLn%2Bpr82AYCRbLb%2Bpj%2BBAMAwtll/05/DTwHBGKw/i3MCgAFssP6mP5AAQO/WXn/TH8uzgKBrx09/turHt/7nxI2hewDQL%2BvPqgQAOmX9WZsAQI%2BsPxsQAOiO9Wcbc95tD%2Bja8TPr30jeGDoBQEesP1vyewDQi1XX3/RzmRMAdMH6sz0BgPasP00IADRm/WnFPQBoxi1f2vIsIGjj%2BNnPV/341v/m4sbQW0DQgPWnBwIAW7P%2BdEIAYFPWn34IAGzH%2BtMVAYCNWH96IwCwBetPhwQAVmf96ZMAwLqsP90SAFiR9adnAgBrsf50TgBgFdaf/nkWECzv%2BNkvVv341n8dcWPoBAALs/6MwuOgYUmrrr/pZ1lOALAY689YBACWYf0Zzpx32wOWd/zc%2Bo8vbwydAOBQ1p9BuQmc7srx%2Bv4n/9j%2BSka06vRP1p%2BVCUCuHeN19j8pwQ7Wn9EJQKg9x%2Bv8XxOD86w/BQhAlkNmy7HgjPWnBgFIseBmhZfA%2BlOGZwHVd/z8l6t95LMS/H2lT9Gb9b6Yp6x/U3Fj6ARQ1tpT9b7PVTgG1p9iBKCgLad/x2cvVgLrTz0CUErb6b%2BgUgmsPyUJQAVd7f5lo79BZP2pSgDG1vn0XzbcscD6U9gcd9u7ipPRpv%2BCs2G923EJ1v4iW/%2BuBI6hE8BgRt/9y056LYH1pzwBGEa96b/g/H9g8xhYfxIIwADKT/9lbY8F1p8QAtCvwN2/bPsSrPplN/10xaMgenTy/FetL6E750rwtzU/y4pfeevfvbgxdALoi%2Bm/1vkv0bIxsP6kEYAu2P3bOfu6HV4C608gAWjM9C/ikBKs/RJYf7olAM2Y/jXc9A0i608yAWjA9G/j2mOB9SecAGzH7rdyZQmsP8x5P/jUwMmLrqf/8lT9%2BU/faXIla9uswdZ/SHlj6ASwruGm/8KfVy3Bqqw/oxCAVQy6%2Bzv%2BphLsyfozEAFYWJnpf9%2B/qAQ7WH/GIgCLqTr9Oz6OGJxn/RmOZwEd6uTFr1tfwi6rrpJjwRnrX0LcGDoB3F7y9L/vc2WWwPozKAG4DdO/z6cOiYH1Z1wCcAN2/0YSjgW9fc3hRgRgL6b/EFVL0PmXHa4lANcw/QuqVIKxvvJwJQG4mt1f1dC3Ckb/4sMZAbjI9G9srGNBva8/yQTgW6a/rf5LUP4lII0A2P3u9FmCwBeC8qIDYPo718%2BtAq8FJYUGwPQPp%2BGxwMtBVVnPAjp58ZvWl7CLodnHxiXwoiQJGsNTKScA01/PBm8QeV2oLSUA3TIxi1jjWOClobw733v4qvU1bKS3Q4B9WdWBJfDqBHr8l9etL2FrTgBbsyzbuPWZwAtEDgHYjmVpYv9bBV4g0qQEoO37P5alE%2BePBV4UmBN%2B8OnkZZv1NzHd8tJwhYAxvKD%2BCaDJ%2BtsXoH/1A7Ax0w%2BMQgCWYfeB4QjAoUw/MKisZwEty/RDLXFjWP8EcPfhq5OXv13wA9p9oIb6AZiWa4DpByqJCMB0cANMP1BPSgCmWzXA7gOFBQVgmqa7D19N0/To9z84/ccdT4Yx/UB5WQHYh%2BkHQkQH4PMvvjk7BNh9IE10AE6ZfiDTB60voDHrD8Sa4371DeAqgWOYfgIAiOVZQACn4sbQCQAglAAAhBIAgFACABBKAABCCQBAqDnvB58ArpI3hk4AAKEEACCUAACEEgCAUJ4FBHAqbgydAABCCQBAKAEACCUAAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAI5VlAAKfixtAJACCUAACEEgCAUAIAEEoAAEIJAEAoAQAINef95CvAVfLG0AkAIJQAAIQSAIBQngUEcCpuDJ0AAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAjlWUAAp%2BLG8M53f/ey9TUA0IC3gABCCQBAKAEACCUAAKEEACCUAACEmvN%2B8hWAaXICAIglAAChBAAglGcBAYRyAgAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAglAAChBAAglGcBAYRyAgAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQKjZ74EBZHICAAjlURAAoZwAAEIJAEAoAQAIJQAAoQQAIJQAAIQSAIBQAgAQSgAAQgkAQCgBAAjlWUAAoZwAAEIJAEAoAQAIJQAAoWa3gAEyOQEAhBIAgFACABBKAABCzX4RGCCTEwBAKM8CAgjlBAAQSgAAQgkAQCgBAAglAAChBAAglAAAhBIAgFACABBKAABCCQBAKM8CAgjlBAAQSgAAQgkAQCgBAAglAAChBAAglAAAhBIAgFACABBq9ovAAJmcAABCeRYQQCgnAIBQAgAQSgAAQgkAQCgBAAglAAChBAAglAAAhBIAgFACABBKAABCeRYQQCgnAIBQAgAQSgAAQgkAQCgBAAglAAChBAAg1Oy3AAAyOQEAhBIAgFCzJ0EAZPIsIIBQ3gICCCUAAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoQQAIJRnAQGEcgIACCUAAKEEACCUAACEEgCAUAIAEEoAAEIJAEAoAQAIJQAAoWZPggDI5FlAAKG8BQQQSgAAQgkAQCgBAAglAAChBAAglAAAhBIAgFACABBKAABCCQBAKM8CAgjlBAAQSgAAQgkAQCgBAAglAAChBAAglAAAhBIAgFACABBKAABC/Q8SeNdQ5SeEgwAAAABJRU5ErkJggg%3D%3D%22%2C%20%22sizes%22%3A%20%22512x512%22%2C%20%22type%22%3A%20%22image/png%22%2C%20%22purpose%22%3A%20%22any%20maskable%22%7D%2C%20%7B%22src%22%3A%20%22data%3Aimage/png%3Bbase64%2CiVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAARsUlEQVR4nO3daXBUV3YH8HPufa9fd2uXQCxCSCxi8wIGb%2BAxsR1TYI9j8IxdxpMasPE4U55JPmSgMpnEdiUVT9VU5UPyIXE214wdJ/NhppyqjA0Te1x2AhiM2Q0Iy1isAiEkdbdavb7lnnx4rUYWfQGhbi34/MofKBCoLf11z7n33Xsbb//OQWCsEDHWL4CNXxwOpsXhYFoGAI31a2DjFI8cTIvDwbQ4HEyLew6mZXA2mA6XFabF4WBaHA6mxQ0p0%2BKRg2lxOJgWh4NpGUDcc7DCDI4G0%2BGywrQ4HEyL1zmYFo8cTIvDwbQ4HEyLew6mxZt9mBaXFabF4WBaHA6mxQ0p0%2BKRg2lxOJgWh4Np8WYfpsUjB9PinWBMi0cOpsXrHEyLRw6mxeFgWhwOpsU9B9PizT5Mi8sK0%2BJwMC3uOSY2gYgCEIAIFFFxH5QZxfzH2ChCBERIZ71MVhGRlBiypGUKTxUtIByOCUkguAqyWdXSFF65tCYclB1dmZ2HYl292YoyQxUpHxyOiQcRbJeEwL/bsmD18rqAmWscI33Ov7x97rVfn62tChQlH9xzTDQIACglvPbjhSuX1QKA61Fvnzul1qytMn%2ByabZp4Gu/PluU8YNnKxMJAgQM0R3NvvjtmSuX1RLB7iP93/px26N/evyHf3uyO%2BYAwJYNs%2B5aVJVMuQJH%2Bul4EWzCMCQ6LnVH7AVN5WtWTFKK2s5mvv%2Bz9kyWykLiv7dHe/vcX7w8NxgQj90/%2BZPPYhhGGNngwSPHBCAlEkFvn2Ma%2BDc/aNn2D3fOaggLgb98r6c/qaorDCKYXhfYczTx8eF%2BRFg8vyoYECMvKwbx0DF%2BoRQAAJG4XV1hbnisYdO6htkNYQBwXRICDQn%2Btw8x9wtDIgAQkQKgEW8P5tnKOOUvY/SnXCL47jcbvvdE46zpIQDwPBIChQQi2Pjo5Hd2Rnv7nPKwvNBtr15eveL2ciLY1xrL2G5ZKOB6I4oHh2PcQQQpMJXxHJdWLK55ft2Mh%2B6qAwBPkUCUEgEAARVR8/Tgz1%2Ba%2B7M3O852ZR9dMfknG2f409p3tndbplAjXi7FW57cPvL/H1YUCCAlprMqmfbmNYVffmHug3fmYoGIV84%2BlAIhAAD6U15FWPq/%2Bco/nXhr6/miTGV55BgvpETXo1ifPbsh/IePNqxfPa2yzPCfmMhCs1KiXDIAwE9GR1fmH3915q2t53kR7OYhJXoeReNORVi%2B8sLcZ9ZMLw8bAOApkgIlDk2GIkAARMjYtO94KpZQXT2J3Ye79x%2BPx/qduirTU6ooL4zXOcaSEIgIsT6nvMx4ZvX0TWsb5zeXwUDXeeWA4XcR/m%2B3nsq%2Bu6vvUsQNBeWBYz0Hj3XVVAUrw4Y3siZ0MC4rYwMRBGIi7TouPbVq2ve/PXNe06BYyAKxyNeRtrPZHYcT7edtiVAeRssSVeVGVZkpEYr4SBY4HKPPn4yksypre3ffVr1p7Yw1KyZDruuEK2MBAIpAICBCd8z9zY74iY4sAlgBBAClSCnwFHmKiv695J5jVBkSM7aKptzm6eGXX2hZvWIyAChFgAWKCAzEQiD0xNxdR5MH2tIZm0J%2BLL7yfaNB/xXv1Rbx32JXISUqj3r7nKapoT9ZP%2BuZR6bXVppXn4wggkCwXfr0WOp3e/vTWRUMiFAAi1o6robDUXJSoFIUiztBS27ZOHvjYzOqK0zQT0b8rhMRbIf2t6V2H01ejLhBU5SFhFIjfJQ2PByOEhIIQmCs3wlZ8smHpz23tvHWuRVwrcmIn5YvO7K/2RG/GHECBpYFhVJQpPnpMHDPUSqGxHTWS6a9tQ9MffGp5lwsBi2BDzZ4MvJlR3bn4eQX57KIUBYSRNcZC%2B45JghDYm/MXjSn4o/Xz/qDlVPAn4wAXKXrRIRI3Hv34/jx0xkCCOYmI6P9ygfjRbDiMyT2RO3n1jZu3jCnusL0H4BdfTISiXu7jiQPtKVTGRW0EIdORq6lJJMVHjmKyl%2BouBSxf/BU80t/1AIAnkcFly7ykxHPo31t6fc%2B6U%2BkvWBAhCxU42aLDfccRYOIQNTVY/9wffNLL7T4j1ILthcAgAiuRwfa0ruOJC/0OiOejJRmnYOjURRCoOsqRbR545wtG%2BYoRQJxyCx18GTkVKf9zs6%2BjkuOWaTJiCp%2BVeGyUgxCoOMqIvjXl5f83rI6fwFjyMf47QUAnOq0dx5OHj%2BdgeFNRsYAh2Ok/DGDiP7tlSUrl9a5LhlG4WTEk97WXfHPvswQUDAgYKwnI9fE4RgRIcAfM15/Zcn9S%2Btcr1AyFAgB2w8lPzqQSGdVMIAIo7cEPhLckN44IcBxiYhef%2BWOXDK%2B2n7mtl8I%2BGh/YuvueNjKPRkpzVe8FItgnI0bIiXajiKC1//qjvvvKJwMv/f8cH/it7vjFSFBw129GBZe5xgnDIn9KdeQePVkZB36z/eibWczZSExIerIEByOYTMMjMWd21oq//rFBcsWVV8lGW9sjXzZka0IC298N5463HMMjykx0mcvXVj95qtLq8pNT5cMm97YFmk/P5rJKH5d4bOyw2AYGIk7g5MhdWPGtkj7%2BWx5aKKOGT4uK9fLMDDa5yxdWP3vry6rLDeUGpoMfzHDrybt57NlEzwZwCPHdbqcjJ/mkiFEgWTYA8koD4lxvsB1PSZez4EIQmCJ7s8rKGCKnpi9bGH1m68urSzTJqM75v7X//aNUTX52m8w9jf1Z7IqmXaIQEoMWtIyBWIuKKX4pIbEzu7MvbfXvvnqsqpyU5eMUxfsN7ZFbJdugmqSNzEWwYRAgZCxVU/CntdUvu7B5lDQOHcxtX1/T2d3JusoyxShoBQCgUAVLyZSYKzP2fj4zL94fn7BZHgKpIBTF%2BxfbIuQoqCJY1NNvoabfRBASCSCZMrN2qqlufzZx5s2PdE0pc7yPyCedE%2BeS%2Bw42PvBJ5eOn%2BxPpT3DwFBQmob/WGtERUdK7InamzfM3byxBXIHl786ZiiQAk5esN/YGlEEppwYT0yuHy5a9/5Yv4YCEFEKcFxKpFwhcPnttQ/dU//kqoaaShMA/OOgfvOR/ytHTvR98El3a3t877Fob8wGhJAlrYBABKVguDHxk7FlY8uPNrS4HkkxdHOG/zjNHzOUIkPimLzNJhFZlvFZ68X9R84HLaO4Ldi4Gzn8CuLv255UHXj8gWnrHpr%2B8L31/p8OOUpKBESkCAyJt7VU3dZSBQDnL6V3HOj59Ej0UFvsZEfS8yAUFKYhDImK4Jp3E/jDVU80u3njvB9taPEXM4Y8afWTcfKC/ebWCNGYJaPUxstOMP9gMREk0q7tqPlNFd%2B4o%2B67j81saSoHf2KiCpwwRgRE9KfjfhERAhvqQ%2BvXNK5f05jKeHuORN7fdenjQz1dkWys37ECImRJ//61gjMdPxndUXvLxnmbB5Ix5GMU5caMN7blkjG21cR/fSVoOcbHyCElOq6Kp92AIZbMr35s5dRnHmkMByUM7OgvePB8iHyJoYHhIRyUD941%2BcG7JidS7pnO1Iefdn/4aXdrezza7xgGhi1pml9pTfyAdkezWzbM2zxQTYZ8FiIQCEdPZt7%2BKEZq7JNRUrhw3Xtj9bn9G/9dl%2BJJp77GWrKg%2Brm1zSuXTfL/1PMIBYgrTguC/%2BCbABAQ4SqRyc9vB3%2BPW9vjuw737muN7vks0h2ziShkyaAlpUDbUX0JZ/OGls0b5nkeiSurCYFAeG9P/%2B/29pcFc1PosUVEQcs83Hph35GOoGXeDD2Hf2lJOuNlsl5tVeD5J5qff2JW07QwABCA0hwLg0EHPfKhUAM/9Fd%2BNCL431%2B/NfGXRhbNqVw0p/J735rV2Z3efqD36Jd9Hx/qPXU%2Bmcp49TXWWz%2B96/fvqfdUoWQoECKXjIqwIDX2ySi1UQwH5eYXiiiRdF1PLZhV%2BezappXLJs2cGgbI1QLdIVL/tKAYOEfa2evW1xjN0wKWOag5hdx9SEP4rYn/a6XIbxqmTQ49vXrG06tnZGzv4PHYbz%2B%2BuPaB6csW1RTeHjyQjA/29leEb4al8esxSotgAlFIsB3V1%2B%2BYhnj4nvqn18z4xh2TQgONhUAUmjNhALnTglmb9n6eOtqeOddlZ10yJdZWyjkN1i2zgzPqzbLg5b%2BvVO4ezwKvROQa2FxrghAMyOWL65YvrgMAda1klI/bZJRmEay06ZACASGVcdMZr77O2rh2zqp7p9x5S43/p9rz5gCkLg8VXVF3z9HkiQ67K%2BIYEgMmWgFUBH1J75NjyX2fp8pCorHeXNQcnDvDqiqX%2BWv2lNK2JvlrdPIzF4FDl7nyI1a%2BmozTZABMpGcr/nMQT1FfwvE8Wjy/%2BslVDauWT2mcGoaB78fVz5v7P%2BCtpzOHT6S/OJdNpJQVQP%2BgBxH4t6IZEk0DiSBjU%2Bvp7NGTmYqwqKkw5jdZC5uCM%2BrNyynxWxNN0bnykgwY2JyBCP/zNasmecUPh0AUArKO8q8r%2BebKaWvum7rmvqlWQIA/B0EQmhsUYaCCpDLqQFv6%2BJlM%2B3mbiIIBUR4ucP6HBu73FgihAAKi48KFHudsl/1/BxLTJ5vNUwOzGgKzpln%2BofX8X9EVncEvRiCkMuqdnfGDJ1I3xyP44Sp%2BOJIZN5P1GqeEv/PIzEfun3r3rbX%2B7%2BvuyYPBcxCAzl7n8InMkZPpSxHXMDB/yuOa3xt/fosIuaKjoOOSc7rT3n7Yb00Ci5qDU2rN2srLscxf6Fnw9aQy6ufvRk532hVlX8dkQCnCcfcttSvvnPTkqhlT6oKQX7iUmgoCuVgQQeupTOvpzJH2TDqrrAD6QwUN/5RHfjjxU0IE8aS351hq3/F00MKZUwK3zg7ObrBqKy63OpcXsgZOmvjJOHfJriwXnnejX4sJrpgNKSLYjvqzTfOXLaqBQRXkyo%2BkQYsTWZtOdGR3HEqcvugAaCvIDcinxJBoSiQAz4O2s9nPz2SsgJhcLec1Bhc0WY31gXxr4jeu0X7vl%2B9Hz12yy4ITJRnjfrMPImRt1RPN%2Bu/kYFz1Sk0A6Et4%2B9vSe1tTsYQHCGEL4foqyHDlhx/0WxNARdDZ657r6t9%2BKDFtkjmlxrh9bsiQkEyrzl53T2syY1M4ePNs27kxRVvnkBKjcefPNy1Yfd/UK9eRBlcQALjQ7Ww/lPyiI5NMK9NAq8DFmqWS/ywBAy0TieBCt3P2on2gLS0E2C4JBMsUAWOMtu3cmPG/2Ud5auHsSgDwXBJmbk1ycAVxPTp6MrPrSLKz17EdskwRtgTB2KxDX9ma%2BL/23%2BHopl8avx5F6zlIUTgk//4/2pYsqKqrtuCrc4H%2BlNp9NHmkPdMTcwEhYGDYQkWjequmzuAoTORMjOOeQxEELXnw8%2Bizf7lnw7r59y6ua6w3AODMRXvnZ6kzndlYwstXEBofsWBXV9Syoqi20jr8RfSf3z7XbweXzDX3fZ4%2Bd8mxbRq8uMkmiiLvBPMUBUwxpTZwsdf51ZkkIFomhoMlmYOwvHw5KfpOsCL/LCsi11MAYAVQ4HhpLG52436dYwgi4MFiQivBfg4eJ8ZECdY5%2BCA10yrFZh8eOsYEX97CRhGHg2lxOJhWiXoObjtGWUnWOXjkYFocDqZVmkUwriqjrDSbfXjkYFq8CHbT4IaUjaJSPZXlfT2jo6Rf55KEQwg0DGF4V9yyxoqNiAxDFDwcNHJGcd83SBGZpvji5MXzF6PXvJqNFYUQmExlTVMoKvJXvMgjBwEgYiKZ7etP86AxOghACiEEFv1nsVRlRcpxcRXd10SJboAv1c0%2Bo3FhPSuxifeuCWzU8DoH0%2BJwMC0OB9PinoNp8cjBtDgcTGtivI0XGxPcczAtLitMi8PBtDgcTIt7DqbFIwfTGi/vDsnGIR45mBYvgjEtbkiZFpcVpsXhYFocDqbFPQfT4pGDaXE4mBavczAt7jmYFpcVpsXhYFocDqbFPQfT4pGDaXE4mBbvBGNaBt8IyXS4rDAtDgfT4nAwLQ4H0%2BJFMKbFIwfT4nAwLQ4H0%2BJFMKbFIwfT4nAwLQ4H0%2BJ1DqbFIwfT4nAwLQ4H0/p/YEbRdYEJMFQAAAAASUVORK5CYII%3D%22%2C%20%22sizes%22%3A%20%22180x180%22%2C%20%22type%22%3A%20%22image/png%22%2C%20%22purpose%22%3A%20%22any%22%7D%5D%7D" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Finance" />
+  <link rel="apple-touch-icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAALQAAAC0CAIAAACyr5FlAAARsUlEQVR4nO3daXBUV3YH8HPufa9fd2uXQCxCSCxi8wIGb+AxsR1TYI9j8IxdxpMasPE4U55JPmSgMpnEdiUVT9VU5UPyIXE214wdJ/NhppyqjA0Te1x2AhiM2Q0Iy1isAiEkdbdavb7lnnx4rUYWfQGhbi34/MofKBCoLf11z7n33Xsbb//OQWCsEDHWL4CNXxwOpsXhYFoGAI31a2DjFI8cTIvDwbQ4HEyLew6mZXA2mA6XFabF4WBaHA6mxQ0p0+KRg2lxOJgWh4NpGUDcc7DCDI4G0+GywrQ4HEyL1zmYFo8cTIvDwbQ4HEyLew6mxZt9mBaXFabF4WBaHA6mxQ0p0+KRg2lxOJgWh4Np8WYfpsUjB9PinWBMi0cOpsXrHEyLRw6mxeFgWhwOpsU9B9PizT5Mi8sK0+JwMC3uOSY2gYgCEIAIFFFxH5QZxfzH2ChCBERIZ71MVhGRlBiypGUKTxUtIByOCUkguAqyWdXSFF65tCYclB1dmZ2HYl292YoyQxUpHxyOiQcRbJeEwL/bsmD18rqAmWscI33Ov7x97rVfn62tChQlH9xzTDQIACglvPbjhSuX1QKA61Fvnzul1qytMn+yabZp4Gu/PluU8YNnKxMJAgQM0R3NvvjtmSuX1RLB7iP93/px26N/evyHf3uyO+YAwJYNs+5aVJVMuQJH+ul4EWzCMCQ6LnVH7AVN5WtWTFKK2s5mvv+z9kyWykLiv7dHe/vcX7w8NxgQj90/+ZPPYhhGGNngwSPHBCAlEkFvn2Ma+Dc/aNn2D3fOaggLgb98r6c/qaorDCKYXhfYczTx8eF+RFg8vyoYECMvKwbx0DF+oRQAAJG4XV1hbnisYdO6htkNYQBwXRICDQn+tw8x9wtDIgAQkQKgEW8P5tnKOOUvY/SnXCL47jcbvvdE46zpIQDwPBIChQQi2Pjo5Hd2Rnv7nPKwvNBtr15eveL2ciLY1xrL2G5ZKOB6I4oHh2PcQQQpMJXxHJdWLK55ft2Mh+6qAwBPkUCUEgEAARVR8/Tgz1+a+7M3O852ZR9dMfknG2f409p3tndbplAjXi7FW57cPvL/H1YUCCAlprMqmfbmNYVffmHug3fmYoGIV84+lAIhAAD6U15FWPq/+co/nXhr6/miTGV55BgvpETXo1ifPbsh/IePNqxfPa2yzPCfmMhCs1KiXDIAwE9GR1fmH3915q2t53kR7OYhJXoeReNORVi+8sLcZ9ZMLw8bAOApkgIlDk2GIkAARMjYtO94KpZQXT2J3Ye79x+Px/qduirTU6ooL4zXOcaSEIgIsT6nvMx4ZvX0TWsb5zeXwUDXeeWA4XcR/m+3nsq+u6vvUsQNBeWBYz0Hj3XVVAUrw4Y3siZ0MC4rYwMRBGIi7TouPbVq2ve/PXNe06BYyAKxyNeRtrPZHYcT7edtiVAeRssSVeVGVZkpEYr4SBY4HKPPn4yksypre3ffVr1p7Yw1KyZDruuEK2MBAIpAICBCd8z9zY74iY4sAlgBBAClSCnwFHmKiv695J5jVBkSM7aKptzm6eGXX2hZvWIyAChFgAWKCAzEQiD0xNxdR5MH2tIZm0J+LL7yfaNB/xXv1Rbx32JXISUqj3r7nKapoT9ZP+uZR6bXVppXn4wggkCwXfr0WOp3e/vTWRUMiFAAi1o6robDUXJSoFIUiztBS27ZOHvjYzOqK0zQT0b8rhMRbIf2t6V2H01ejLhBU5SFhFIjfJQ2PByOEhIIQmCs3wlZ8smHpz23tvHWuRVwrcmIn5YvO7K/2RG/GHECBpYFhVJQpPnpMHDPUSqGxHTWS6a9tQ9MffGp5lwsBi2BDzZ4MvJlR3bn4eQX57KIUBYSRNcZC+45JghDYm/MXjSn4o/Xz/qDlVPAn4wAXKXrRIRI3Hv34/jx0xkCCOYmI6P9ygfjRbDiMyT2RO3n1jZu3jCnusL0H4BdfTISiXu7jiQPtKVTGRW0EIdORq6lJJMVHjmKyl+ouBSxf/BU80t/1AIAnkcFly7ykxHPo31t6fc+6U+kvWBAhCxU42aLDfccRYOIQNTVY/9wffNLL7T4j1ILthcAgAiuRwfa0ruOJC/0OiOejJRmnYOjURRCoOsqRbR545wtG+YoRQJxyCx18GTkVKf9zs6+jkuOWaTJiCp+VeGyUgxCoOMqIvjXl5f83rI6fwFjyMf47QUAnOq0dx5OHj+dgeFNRsYAh2Ok/DGDiP7tlSUrl9a5LhlG4WTEk97WXfHPvswQUDAgYKwnI9fE4RgRIcAfM15/Zcn9S+tcr1AyFAgB2w8lPzqQSGdVMIAIo7cEPhLckN44IcBxiYhef+WOXDK+2n7mtl8I+Gh/YuvueNjKPRkpzVe8FItgnI0bIiXajiKC1//qjvvvKJwMv/f8cH/it7vjFSFBw129GBZe5xgnDIn9KdeQePVkZB36z/eibWczZSExIerIEByOYTMMjMWd21oq//rFBcsWVV8lGW9sjXzZka0IC298N5463HMMjykx0mcvXVj95qtLq8pNT5cMm97YFmk/P5rJKH5d4bOyw2AYGIk7g5MhdWPGtkj7+Wx5aKKOGT4uK9fLMDDa5yxdWP3vry6rLDeUGpoMfzHDrybt57NlEzwZwCPHdbqcjJ/mkiFEgWTYA8koD4lxvsB1PSZez4EIQmCJ7s8rKGCKnpi9bGH1m68urSzTJqM75v7X//aNUTX52m8w9jf1Z7IqmXaIQEoMWtIyBWIuKKX4pIbEzu7MvbfXvvnqsqpyU5eMUxfsN7ZFbJdugmqSNzEWwYRAgZCxVU/CntdUvu7B5lDQOHcxtX1/T2d3JusoyxShoBQCgUAVLyZSYKzP2fj4zL94fn7BZHgKpIBTF+xfbIuQoqCJY1NNvoabfRBASCSCZMrN2qqlufzZx5s2PdE0pc7yPyCedE+eS+w42PvBJ5eOn+xPpT3DwFBQmob/WGtERUdK7InamzfM3byxBXIHl786ZiiQAk5esN/YGlEEppwYT0yuHy5a9/5Yv4YCEFEKcFxKpFwhcPnttQ/dU//kqoaaShMA/OOgfvOR/ytHTvR98El3a3t877Fob8wGhJAlrYBABKVguDHxk7FlY8uPNrS4HkkxdHOG/zjNHzOUIkPimLzNJhFZlvFZ68X9R84HLaO4Ldi4Gzn8CuLv255UHXj8gWnrHpr+8L31/p8OOUpKBESkCAyJt7VU3dZSBQDnL6V3HOj59Ej0UFvsZEfS8yAUFKYhDImK4Jp3E/jDVU80u3njvB9taPEXM4Y8afWTcfKC/ebWCNGYJaPUxstOMP9gMREk0q7tqPlNFd+4o+67j81saSoHf2KiCpwwRgRE9KfjfhERAhvqQ+vXNK5f05jKeHuORN7fdenjQz1dkWys37ECImRJ//61gjMdPxndUXvLxnmbB5Ix5GMU5caMN7blkjG21cR/fSVoOcbHyCElOq6Kp92AIZbMr35s5dRnHmkMByUM7OgvePB8iHyJoYHhIRyUD941+cG7JidS7pnO1Iefdn/4aXdrezza7xgGhi1pml9pTfyAdkezWzbM2zxQTYZ8FiIQCEdPZt7+KEZq7JNRUrhw3Xtj9bn9G/9dl+JJp77GWrKg+rm1zSuXTfL/1PMIBYgrTguC/+CbABAQ4SqRyc9vB3+PW9vjuw737muN7vks0h2ziShkyaAlpUDbUX0JZ/OGls0b5nkeiSurCYFAeG9P/+/29pcFc1PosUVEQcs83Hph35GOoGXeDD2Hf2lJOuNlsl5tVeD5J5qff2JW07QwABCA0hwLg0EHPfKhUAM/9Fd+NCL431+/NfGXRhbNqVw0p/J735rV2Z3efqD36Jd9Hx/qPXU+mcp49TXWWz+96/fvqfdUoWQoECKXjIqwIDX2ySi1UQwH5eYXiiiRdF1PLZhV+ezappXLJs2cGgbI1QLdIVL/tKAYOEfa2evW1xjN0wKWOag5hdx9SEP4rYn/a6XIbxqmTQ49vXrG06tnZGzv4PHYbz++uPaB6csW1RTeHjyQjA/29leEb4al8esxSotgAlFIsB3V1++Yhnj4nvqn18z4xh2TQgONhUAUmjNhALnTglmb9n6eOtqeOddlZ10yJdZWyjkN1i2zgzPqzbLg5b+vVO4ezwKvROQa2FxrghAMyOWL65YvrgMAda1klI/bZJRmEay06ZACASGVcdMZr77O2rh2zqp7p9x5S43/p9rz5gCkLg8VXVF3z9HkiQ67K+IYEgMmWgFUBH1J75NjyX2fp8pCorHeXNQcnDvDqiqX+Wv2lNK2JvlrdPIzF4FDl7nyI1a+mozTZABMpGcr/nMQT1FfwvE8Wjy/+slVDauWT2mcGoaB78fVz5v7P+CtpzOHT6S/OJdNpJQVQP+gBxH4t6IZEk0DiSBjU+vp7NGTmYqwqKkw5jdZC5uCM+rNyynxWxNN0bnykgwY2JyBCP/zNasmecUPh0AUArKO8q8r+ebKaWvum7rmvqlWQIA/B0EQmhsUYaCCpDLqQFv6+JlM+3mbiIIBUR4ucP6HBu73FgihAAKi48KFHudsl/1/BxLTJ5vNUwOzGgKzpln+ofX8X9EVncEvRiCkMuqdnfGDJ1I3xyP44Sp+OJIZN5P1GqeEv/PIzEfun3r3rbX+7+vuyYPBcxCAzl7n8InMkZPpSxHXMDB/yuOa3xt/fosIuaKjoOOSc7rT3n7Yb00Ci5qDU2rN2srLscxf6Fnw9aQy6ufvRk532hVlX8dkQCnCcfcttSvvnPTkqhlT6oKQX7iUmgoCuVgQQeupTOvpzJH2TDqrrAD6QwUN/5RHfjjxU0IE8aS351hq3/F00MKZUwK3zg7ObrBqKy63OpcXsgZOmvjJOHfJriwXnnejX4sJrpgNKSLYjvqzTfOXLaqBQRXkyo+kQYsTWZtOdGR3HEqcvugAaCvIDcinxJBoSiQAz4O2s9nPz2SsgJhcLec1Bhc0WY31gXxr4jeu0X7vl+9Hz12yy4ITJRnjfrMPImRt1RPN+u/kYFz1Sk0A6Et4+9vSe1tTsYQHCGEL4foqyHDlhx/0WxNARdDZ657r6t9+KDFtkjmlxrh9bsiQkEyrzl53T2syY1M4ePNs27kxRVvnkBKjcefPNy1Yfd/UK9eRBlcQALjQ7Ww/lPyiI5NMK9NAq8DFmqWS/ywBAy0TieBCt3P2on2gLS0E2C4JBMsUAWOMtu3cmPG/2Ud5auHsSgDwXBJmbk1ycAVxPTp6MrPrSLKz17EdskwRtgTB2KxDX9ma+L/23+Hopl8avx5F6zlIUTgk//4/2pYsqKqrtuCrc4H+lNp9NHmkPdMTcwEhYGDYQkWjequmzuAoTORMjOOeQxEELXnw8+izf7lnw7r59y6ua6w3AODMRXvnZ6kzndlYwstXEBofsWBXV9Syoqi20jr8RfSf3z7XbweXzDX3fZ4+d8mxbRq8uMkmiiLvBPMUBUwxpTZwsdf51ZkkIFomhoMlmYOwvHw5KfpOsCL/LCsi11MAYAVQ4HhpLG52436dYwgi4MFiQivBfg4eJ8ZECdY5+CA10yrFZh8eOsYEX97CRhGHg2lxOJhWiXoObjtGWUnWOXjkYFocDqZVmkUwriqjrDSbfXjkYFq8CHbT4IaUjaJSPZXlfT2jo6Rf55KEQwg0DGF4V9yyxoqNiAxDFDwcNHJGcd83SBGZpvji5MXzF6PXvJqNFYUQmExlTVMoKvJXvMgjBwEgYiKZ7etP86AxOghACiEEFv1nsVRlRcpxcRXd10SJboAv1c0+o3FhPSuxifeuCWzU8DoH0+JwMC0OB9PinoNp8cjBtDgcTGtivI0XGxPcczAtLitMi8PBtDgcTIt7DqbFIwfTGi/vDsnGIR45mBYvgjEtbkiZFpcVpsXhYFocDqbFPQfT4pGDaXE4mBavczAt7jmYFpcVpsXhYFocDqbFPQfT4pGDaXE4mBbvBGNaBt8IyXS4rDAtDgfT4nAwLQ4H0+JFMKbFIwfT4nAwLQ4H0+JFMKbFIwfT4nAwLQ4H0+J1DqbFIwfT4nAwLQ4H0/p/YEbRdYEJMFQAAAAASUVORK5CYII=" />
+  <link rel="icon" type="image/png" href="data:image/png;base64,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" />
+
   <style>
     :root{
-      --bg:#eef4fb;
+      --bg:#f5f6f8;
       --panel:#ffffff;
-      --text:#0f172a;
-      --muted:#64748b;
-      --line:#d8e5f4;
-      --primary:#2563eb;
-      --primary-dark:#1d4ed8;
-      --teal:#59c99f;
-      --teal2:#48bfc0;
-      --shadow:0 18px 48px rgba(30,58,138,.10);
-      --radius:26px;
-      --safe-bottom:max(14px, env(safe-area-inset-bottom));
-      --safe-top:max(8px, env(safe-area-inset-top));
+      --ink:#1b1d21;
+      --muted:#6b7280;
+      --faint:#9aa1ab;
+      --line:#e9ebef;
+      --line-strong:#dfe2e7;
+      --primary:#2f5bd0;
+      --primary-soft:#eef2fc;
+      --up:#1f9d63;
+      --down:#d24b5e;
+      --radius:18px;
+      --radius-sm:13px;
+      --safe-bottom:env(safe-area-inset-bottom);
+      --safe-top:env(safe-area-inset-top);
+      --tabbar:74px;
     }
 
     *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
     body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(37,99,235,.12), transparent 32%),
-        radial-gradient(circle at top right, rgba(89,201,159,.10), transparent 30%),
-        linear-gradient(180deg,#f3f7fc 0%, #eef4fb 55%, #edf3fb 100%);
-      color:var(--text);
-      padding-bottom:110px;
+      font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Segoe UI",sans-serif;
+      background:var(--bg);
+      color:var(--ink);
       -webkit-tap-highlight-color:transparent;
+      -webkit-font-smoothing:antialiased;
+      padding-bottom:calc(var(--tabbar) + var(--safe-bottom) + 18px);
+      line-height:1.5;
     }
-    .app{
-      max-width:520px;
-      margin:0 auto;
-      min-height:100vh;
-    }
+    .num{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
+
+    .app{ max-width:520px; margin:0 auto; }
+
     header{
-      padding:calc(18px + var(--safe-top)) 18px 10px;
+      padding:calc(16px + var(--safe-top)) 20px 6px;
     }
-    .app-brand{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:14px;
-      max-width:520px;
-      margin:0 auto;
-    }
-    .title{
-      font-size:30px;
-      font-weight:950;
-      letter-spacing:-.06em;
-      line-height:1.05;
-    }
+    .app-brand{ display:flex; align-items:center; justify-content:space-between; }
+    .title{ font-size:22px; font-weight:700; letter-spacing:-.02em; }
     .brand-chip{
-      flex:0 0 auto;
-      padding:8px 12px;
-      border-radius:999px;
-      background:rgba(255,255,255,.78);
-      border:1px solid rgba(213,226,245,.95);
-      color:#2f63d4;
-      font-size:12px;
-      font-weight:900;
-      box-shadow:0 10px 26px rgba(34,65,122,.08);
+      font-size:11px; font-weight:600; color:var(--muted);
+      border:1px solid var(--line-strong); border-radius:999px; padding:5px 11px;
+      background:var(--panel);
     }
 
-    .screen{display:none}
-    .screen.active{display:block}
+    .screen{ display:none; padding:0 16px; }
+    .screen.active{ display:block; animation:fade .18s ease; }
+    @keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
+    @media (prefers-reduced-motion: reduce){
+      .screen.active{ animation:none }
+    }
 
-    .filters{
-      margin:10px 16px 0;
-      display:grid; grid-template-columns:1fr 1fr; gap:12px;
+    section{ margin-top:14px; }
+
+    .card{
+      background:var(--panel);
+      border:1px solid var(--line);
+      border-radius:var(--radius);
+      padding:18px;
     }
-    .filters.single-button{
-      grid-template-columns:1fr auto;
-    }
-    .filters .quick{
-      display:flex; align-items:end;
-    }
-    .month-actions{
-      margin:10px 16px 0;
-      display:flex;
-      gap:8px;
-      flex-wrap:wrap;
-    }
-    .month-action{
-      background:#fff;
-      color:var(--primary);
-      border:1px solid #b9cdf4;
-      border-radius:999px;
-      font-size:13px;
-      padding:9px 12px;
-      font-weight:900;
-    }
-    label{
-      font-size:12px;
-      font-weight:900;
-      color:#475569;
-      display:block;
-      letter-spacing:.02em;
-    }
+
+    label{ font-size:12.5px; font-weight:600; color:var(--muted); display:block; }
     select, input, textarea{
-      width:100%;
-      margin-top:6px;
-      border:1px solid var(--line);
-      border-radius:18px;
-      background:rgba(255,255,255,.95);
-      font-size:16px;
-      padding:14px 13px;
-      color:var(--text);
-      font-family:inherit;
+      width:100%; margin-top:7px;
+      border:1px solid var(--line-strong); border-radius:var(--radius-sm);
+      background:var(--panel); font-size:16px; padding:13px 13px; color:var(--ink);
+      font-family:inherit; appearance:none; -webkit-appearance:none;
     }
-    .month-picker-wrap{
-      position:relative;
-      margin-top:6px;
+    select{
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%236b7280' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 14px center; padding-right:36px;
     }
-    .month-picker-btn{
-      width:100%;
-      background:#fff;
-      color:var(--text);
-      border:1px solid var(--line);
-      border-radius:18px;
-      font-size:16px;
-      padding:15px 44px 15px 15px;
-      text-align:left;
-      font-weight:700;
-      position:relative;
+    textarea{ min-height:64px; resize:vertical; }
+    input:focus, select:focus, textarea:focus{ outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(47,91,208,.12); }
+
+    button{ font-family:inherit; cursor:pointer; border:none; }
+    button[type="submit"], .btn-primary{
+      width:100%; background:var(--primary); color:#fff; font-size:16px; font-weight:650;
+      border-radius:var(--radius-sm); padding:14px; margin-top:4px;
     }
-    .month-picker-btn:after{
-      content:"⌄";
-      position:absolute;
-      right:16px;
-      top:50%;
-      transform:translateY(-50%);
-      color:#111827;
-      font-size:18px;
-    }
-    .month-picker-panel{
-      display:none;
-      position:absolute;
-      z-index:200;
-      top:calc(100% + 6px);
-      left:0;
-      right:0;
-      background:#fff;
-      border:1px solid #b8c8e3;
-      border-radius:18px;
-      box-shadow:0 16px 40px rgba(30,55,100,.18);
-      overflow:hidden;
-      max-height:420px;
-      overflow-y:auto;
-      overscroll-behavior:contain;
-    }
-    .month-picker-panel.active{
-      display:block;
-    }
-    .month-option{
-      width:100%;
-      background:#fff;
-      color:#111827;
-      border:0;
-      border-radius:0;
-      text-align:left;
-      padding:13px 18px;
-      font-size:15px;
-      font-weight:750;
-      border-bottom:1px solid #edf2fa;
-    }
-    .month-option:last-child{
-      border-bottom:0;
-    }
-    .month-option.active{
-      background:var(--primary);
-      color:#fff;
-    }
-    .month-option.control{
-      color:var(--primary);
-      background:#f4f8ff;
-      font-weight:900;
-    }
-    textarea{min-height:76px; resize:vertical}
-    input[readonly]{
-      background:#f3f7ff;
-      color:#64748b;
-    }
-    button{
-      border:none;
-      border-radius:16px;
-      padding:12px 14px;
-      background:var(--primary);
-      color:#fff;
-      font-weight:800;
-      font-size:15px;
-      font-family:inherit;
-      cursor:pointer;
+    .btn-primary:active, button[type="submit"]:active{ opacity:.85; }
+    .soft{
+      width:100%; background:var(--primary-soft); color:var(--primary); font-weight:650;
+      border-radius:var(--radius-sm); padding:13px; font-size:15px;
     }
     .ghost{
-      background:#fff;
-      color:var(--primary);
-      border:1px solid #b9cdf4;
-    }
-    .soft{
-      background:#f3f7ff;
-      color:var(--primary);
-      border:1px solid #dbe7fb;
+      background:var(--panel); color:var(--primary); border:1px solid var(--line-strong);
+      border-radius:999px; padding:9px 14px; font-size:13px; font-weight:600;
     }
     .danger{
-      background:#fff1f3;
-      color:#db3d5e;
-      border:1px solid #ffd1db;
+      width:100%; background:#fff; color:var(--down); border:1px solid #f0ccd2;
+      border-radius:var(--radius-sm); padding:13px; font-size:15px; font-weight:650;
     }
-    section{margin:16px 16px 18px}
-    .card{
-      background:rgba(255,255,255,.92);
-      backdrop-filter:blur(14px);
-      border-radius:30px;
-      box-shadow:var(--shadow);
-      border:1px solid rgba(215,228,246,.96);
-      padding:20px;
-      position:relative;
-    }
-    .summary-card{
-      padding:22px 22px 24px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,.96), rgba(255,255,255,.90)),
-        radial-gradient(circle at top right, rgba(37,99,235,.12), transparent 34%);
-    }
-    .card-head{
-      display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:8px;
-    }
-    .card-title{
-      font-size:16px; font-weight:900; letter-spacing:-.03em;
-    }
-    .card-sub{
-      font-size:12px; color:var(--muted); font-weight:700;
-    }
-    .eye{
-      color:var(--primary); font-size:20px; line-height:1;
-    }
-    .big-num{
-      font-size:48px; line-height:1.02; font-weight:950; letter-spacing:-.06em;
-      margin:10px 0 6px;
-    }
-    .yen{font-size:.72em}
-    .delta{
-      font-size:18px; font-weight:900; color:#2f8f89; letter-spacing:-.02em;
-      display:flex; align-items:center; gap:8px; flex-wrap:wrap;
-    }
-    .summary-meta{
-      margin-top:12px; display:grid; grid-template-columns:1fr 1fr; gap:12px;
-    }
-    .meta-box{
-      padding:12px 14px; border-radius:18px; background:#f7faff; border:1px solid #e2ebf8;
-    }
-    .meta-box span{
-      display:block; font-size:12px; color:var(--muted); font-weight:800; margin-bottom:4px;
-    }
-    .meta-box strong{font-size:17px}
+    .tiny-btn{ width:auto; padding:7px 11px; font-size:12px; border-radius:9px; }
 
-    .chart-box{
-      margin-top:18px;
-      border-top:1px solid #edf2fa;
-      padding-top:14px;
+    .stack > * + *{ margin-top:14px; }
+    .form-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+
+    .card-title{ font-size:16px; font-weight:700; }
+    .card-sub{ font-size:12.5px; color:var(--muted); margin-top:2px; }
+    .card-head{ display:flex; align-items:flex-start; justify-content:space-between; }
+    .section-title{ font-size:13px; font-weight:600; color:var(--muted); }
+    .group-title{ font-size:14px; font-weight:700; color:var(--ink); }
+
+    /* filters */
+    .filters{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:14px; align-items:end; }
+    .filters.single{ grid-template-columns:1fr auto; }
+    .quick{ display:flex; }
+
+    /* month picker */
+    .month-picker-wrap{ position:relative; margin-top:7px; }
+    .month-picker-btn{
+      width:100%; text-align:left; background:var(--panel); color:var(--ink);
+      border:1px solid var(--line-strong); border-radius:var(--radius-sm);
+      font-size:16px; font-weight:600; padding:13px 36px 13px 13px;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5' stroke='%236b7280' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat:no-repeat; background-position:right 14px center;
     }
-    .range-tabs{
-      display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;
+    .month-picker-panel{
+      display:none; position:absolute; z-index:40; top:calc(100% + 6px); left:0; right:0;
+      background:var(--panel); border:1px solid var(--line-strong); border-radius:14px;
+      box-shadow:0 12px 30px rgba(20,30,60,.12); padding:6px; max-height:280px; overflow:auto;
     }
+    .month-picker-panel.active{ display:block; }
+    .month-option{
+      display:block; width:100%; text-align:left; background:transparent; color:var(--ink);
+      padding:11px 12px; border-radius:9px; font-size:15px; font-weight:550;
+    }
+    .month-option.active{ background:var(--primary-soft); color:var(--primary); font-weight:700; }
+    .month-option.control{ color:var(--muted); font-weight:600; font-size:13.5px; }
+
+    /* summary hero */
+    .hero{ padding:20px 18px 16px; }
+    .hero .eyebrow{ font-size:12.5px; color:var(--muted); font-weight:600; }
+    .big-num{ font-size:40px; font-weight:750; letter-spacing:-.03em; margin-top:6px; line-height:1.05; }
+    .big-num .yen{ font-size:19px; font-weight:650; margin-left:3px; color:var(--muted); }
+    .delta{ font-size:14px; font-weight:650; margin-top:6px; }
+    .delta.up{ color:var(--up); } .delta.down{ color:var(--down); } .delta.flat{ color:var(--muted); }
+
+    .chart-box{ margin-top:14px; }
+    .area-wrap{ width:100%; height:170px; }
+    .area-wrap.small{ height:150px; }
+    .tap-card{ cursor:pointer; }
+    .range-tabs{ display:flex; gap:6px; margin-top:10px; }
     .range-tab{
-      min-width:84px; text-align:center; padding:12px 14px; border-radius:18px;
-      background:#fff; color:#6b7280; border:1px solid #dbe6f6; font-weight:900;
+      flex:1; background:var(--bg); color:var(--muted); border:1px solid var(--line);
+      border-radius:9px; padding:8px 0; font-size:12.5px; font-weight:600;
     }
-    .range-tab.active{
-      background:var(--primary); color:#fff; border-color:var(--primary);
-      box-shadow:0 8px 20px rgba(47,99,212,.24);
-    }
+    .range-tab.active{ background:var(--primary-soft); color:var(--primary); border-color:transparent; }
 
-    .area-wrap{
-      margin-top:4px;
-      background:linear-gradient(180deg,#ffffff 0%, #f8fbff 100%);
-      border-radius:24px;
-      position:relative;
-      overflow:hidden;
-      min-height:280px;
-    }
-    .area-wrap.small{min-height:250px}
-    .axis-label{
-      font-size:11px; fill:#7d8796; font-weight:700;
-    }
-    .axis-line{stroke:#d8e4f4; stroke-width:1; stroke-dasharray:3 4}
-    .axis-bottom{stroke:#c7d6eb; stroke-width:1.4}
-    .line-main{stroke:var(--primary); stroke-width:4; fill:none; stroke-linecap:round; stroke-linejoin:round}
-    .area-main{fill:url(#gradArea)}
-    .area-dot{fill:var(--primary)}
+    .axis-label{ font-size:9px; fill:var(--faint); }
+    .axis-line{ stroke:var(--line); stroke-width:1; }
+    .axis-bottom{ stroke:var(--line-strong); stroke-width:1; }
+    .area-main{ fill:url(#gradArea); }
+    .line-main{ fill:none; stroke:var(--primary); stroke-width:2.4; stroke-linejoin:round; stroke-linecap:round; }
+    .area-dot{ fill:var(--primary); stroke:#fff; stroke-width:2; }
 
-    .mini-grid{
-      display:grid; grid-template-columns:1fr 1fr; gap:16px;
-    }
-
-    .tap-card{cursor:pointer}
-    .tap-badge{
-      position:absolute; right:16px; top:16px;
-      background:#f2f7ff; color:var(--primary); border:1px solid #d5e3fb;
-      padding:6px 10px; border-radius:999px; font-size:11px; font-weight:900;
-    }
-
-    .donut-layout{
-      display:grid; grid-template-columns:1fr; gap:12px; align-items:center;
-    }
-    .donut-row-meta{
-      display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:2px;
-    }
-    .donut-meta{
-      font-size:12px; font-weight:900; color:#657082;
-    }
-    .donut-meta strong{
-      display:block; margin-top:3px; font-size:16px; color:#2f8f89;
-    }
-    .donut-wrap{
-      display:flex; justify-content:center; align-items:center; padding:8px 0 0;
-    }
-    .donut-stage{
-      position:relative;
-      width:min(82vw, 390px);
-      height:min(82vw, 390px);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-    .donut{
-      width:min(76vw, 360px);
-      height:min(76vw, 360px);
-      border-radius:50%;
-      position:relative;
-      box-shadow:0 10px 26px rgba(33,79,182,.10);
-      background:conic-gradient(var(--primary) 0 55%, var(--teal) 55% 95%, var(--teal2) 95% 100%);
-    }
-    .donut-label{
-      position:absolute;
-      transform:translate(-50%, -50%);
-      background:rgba(255,255,255,.96);
-      border:1px solid #dbe6f4;
-      box-shadow:0 8px 20px rgba(37,99,235,.10);
-      border-radius:999px;
-      padding:6px 10px;
-      font-size:11px;
-      line-height:1.15;
-      font-weight:900;
-      color:#334155;
-      white-space:nowrap;
-      text-align:center;
-      max-width:120px;
-    }
-    .donut-label .pct{
-      color:#2563eb;
-      margin-left:4px;
-    }
-    .donut:after{
-      content:"";
-      position:absolute; inset:18%;
-      background:#fff;
-      border-radius:50%;
-      box-shadow:inset 0 0 0 1px #edf2fa;
-    }
-    .donut-center{
-      position:absolute; inset:0;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      z-index:1; text-align:center;
-      padding:0 20%;
-    }
-    .donut-center .label{
-      font-size:14px; font-weight:900; color:#374151;
-    }
-    .donut-center .value{
-      margin-top:4px;
-      font-size:27px; line-height:1.15; font-weight:900; letter-spacing:-.04em;
-    }
-
-    .legend{
-      display:flex; flex-wrap:wrap; gap:12px 18px; justify-content:flex-start;
-      margin-top:8px;
-    }
-    .legend-item{
-      display:flex; align-items:center; gap:8px; font-weight:800; font-size:13px;
-      padding:7px 10px;
-      border-radius:999px;
-      background:rgba(255,255,255,.72);
-      border:1px solid #e6eef9;
-    }
-    .swatch{
-      width:16px; height:16px; border-radius:4px;
-    }
-
-    .owner-grid{
-      display:grid; grid-template-columns:1fr 1fr; gap:12px;
-    }
+    /* owner cards */
+    .owner-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; }
     .owner-card{
-      background:#f7faff; border:1px solid #e1ebfa;
-      border-radius:20px; padding:14px 16px;
+      background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+      padding:14px 16px;
     }
-    .owner-card span{
-      display:block; font-size:12px; color:var(--muted); font-weight:800;
-    }
-    .owner-card strong{
-      display:block; margin-top:6px; font-size:22px; font-weight:900; letter-spacing:-.04em;
-    }
+    .owner-card span{ font-size:12.5px; color:var(--muted); font-weight:600; }
+    .owner-card strong{ display:block; font-size:18px; font-weight:700; margin-top:5px; letter-spacing:-.01em; }
+    .list-summary{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+    .list-summary .owner-card{ padding:12px; }
+    .list-summary strong{ font-size:15px; }
 
-    .section-title{
-      margin-bottom:10px;
-      font-size:16px; font-weight:900; letter-spacing:-.02em;
-    }
+    /* breakdown / pie */
+    .mini-grid{ display:grid; grid-template-columns:1fr; gap:14px; }
+    .meta-row{ display:flex; justify-content:space-between; align-items:center; padding:9px 0; border-top:1px solid var(--line); }
+    .meta-row:first-of-type{ border-top:none; }
+    .meta-row span{ font-size:13px; color:var(--muted); font-weight:550; }
+    .meta-row strong{ font-size:15px; font-weight:700; }
 
-    .list-summary{
-      display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-bottom:12px;
+    .donut-layout{ display:flex; flex-direction:column; align-items:center; }
+    .donut-row-meta{ width:100%; display:flex; justify-content:space-between; margin-bottom:12px; }
+    .donut-row-meta .k{ font-size:12px; color:var(--muted); }
+    .donut-row-meta .v{ font-size:13px; font-weight:700; }
+    .donut-stage{ position:relative; width:180px; height:180px; }
+    .donut{ width:180px; height:180px; border-radius:50%; }
+    .donut-center{
+      position:absolute; inset:30px; background:var(--panel); border-radius:50%;
+      display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;
     }
-    .list-summary .owner-card{
-      padding:12px;
-    }
-    .list-summary .owner-card strong{
-      font-size:16px;
-    }
+    .donut-center .label{ font-size:11px; color:var(--muted); }
+    .donut-center .value{ font-size:18px; font-weight:750; margin-top:3px; letter-spacing:-.02em; }
+    .legend{ width:100%; margin-top:16px; display:flex; flex-direction:column; gap:8px; }
+    .legend-item{ display:flex; align-items:center; font-size:13px; color:var(--ink); justify-content:space-between; }
+    .legend-item .lab{ display:flex; align-items:center; gap:8px; }
+    .swatch{ width:11px; height:11px; border-radius:3px; display:inline-block; }
+    .tap-hint{ font-size:11px; color:var(--faint); margin-top:10px; text-align:center; }
 
-    .group-title{
-      font-size:15px; font-weight:900; margin:4px 0 4px;
-      color:#1f2937;
-    }
-    .row{
-      display:flex; justify-content:space-between; gap:12px;
-      padding:13px 0; border-bottom:1px solid #edf2fa;
-    }
-    .row.tap-row{
-      cursor:pointer;
-      border-radius:16px;
-      padding-left:8px;
-      padding-right:8px;
-      margin-left:-8px;
-      margin-right:-8px;
-    }
-    .row.tap-row:active{
-      background:#f4f8ff;
-    }
-    .row:last-child{border-bottom:none}
-    .row-title{
-      font-size:15px; font-weight:900; margin-bottom:4px;
-    }
-    .row-meta{
-      color:var(--muted); font-size:12px; line-height:1.45; font-weight:700;
-    }
-    .row-amt{
-      text-align:right; font-size:15px; font-weight:900; white-space:nowrap;
-    }
-    .row-amt small{
-      display:block; margin-top:4px; font-size:11px; color:var(--muted); font-weight:800;
-    }
-    .row-actions{
-      display:flex;
-      gap:8px;
-      align-items:center;
-      justify-content:flex-end;
-      flex-wrap:wrap;
-      min-width:92px;
-    }
-    .tiny-btn{
-      padding:8px 10px;
-      border-radius:12px;
-      font-size:12px;
-      font-weight:900;
-      white-space:nowrap;
-    }
-    .order-btn{
-      background:#f3f7ff;
-      color:var(--primary);
-      border:1px solid #dbe7fb;
-    }
-    .kind-badge{
-      display:inline-block;
-      padding:3px 8px;
-      border-radius:999px;
-      font-size:11px;
-      font-weight:900;
-      margin-right:6px;
-      background:#eef4ff;
-      color:#214fb6;
-    }
-    .kind-badge.liability{
-      background:#fff1f3;
-      color:#db3d5e;
-    }
-    .edit-handle{
-      color:#8b95a7;
-      font-size:24px;
-      font-weight:900;
-      line-height:1;
-      padding:11px 8px;
-      min-width:42px;
-      min-height:42px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      user-select:none;
-      cursor:grab;
-      touch-action:none;
-      border-radius:14px;
-      background:#f6f9ff;
-      border:1px solid #e2ebfa;
-    }
-    .edit-handle:active{
-      cursor:grabbing;
-      background:#eaf2ff;
-    }
-    .reorder-row{
-      transition:transform .16s ease, box-shadow .16s ease, background .16s ease, opacity .16s ease;
-    }
-    .reorder-row.dragging{
-      opacity:.98;
-      background:#ffffff;
-      border-radius:18px;
-      box-shadow:0 18px 44px rgba(30,58,138,.22);
-      transform:scale(1.025);
-      z-index:20;
-      position:relative;
-    }
-    .reorder-row.drag-over{
-      background:#eef5ff;
-      border-radius:18px;
-      transform:translateY(2px);
-    }
-    .master-edit-btn{
-      padding:10px 18px;
-      font-size:14px;
-      min-width:72px;
-      border-radius:16px;
-    }
-    .master-title-row{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      margin-bottom:8px;
-    }
-    .edit-mode-note{
-      margin-top:10px;
-      padding:12px;
-      border-radius:16px;
-      background:#fff8e7;
-      border:1px solid #ffe1a6;
-      color:#735c18;
-      font-size:12px;
-      font-weight:800;
-      line-height:1.6;
-    }
-    .master-note{
-      margin-top:10px;
-      padding:12px;
-      border-radius:16px;
-      background:#f7faff;
-      border:1px solid #e1ebfa;
-      color:#5b6472;
-      font-size:12px;
-      font-weight:700;
-      line-height:1.6;
-    }
+    /* list rows */
+    .row{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--line); }
+    .row:last-child{ border-bottom:none; }
+    .tap-row{ cursor:pointer; }
+    .tap-row:active{ background:var(--bg); border-radius:10px; }
+    .row-title{ font-size:14.5px; font-weight:650; }
+    .row-meta{ font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.5; }
+    .row-amt{ text-align:right; font-size:15px; font-weight:700; white-space:nowrap; }
+    .row-amt small{ display:block; font-size:11px; font-weight:550; color:var(--muted); margin-top:2px; }
+    .kind-badge{ font-size:10px; font-weight:700; color:var(--primary); background:var(--primary-soft); border-radius:6px; padding:2px 6px; margin-right:6px; }
+    .kind-badge.liability{ color:var(--down); background:#fbe9ec; }
+    .row-actions{ display:flex; align-items:center; gap:8px; }
+    .edit-handle{ font-size:18px; color:var(--faint); padding:4px 6px; cursor:grab; touch-action:none; }
 
-    .stack{display:grid; gap:12px}
-    .form-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+    .empty{ text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0; }
+    .group-block{ margin-top:14px; }
+    .master-note{ font-size:11.5px; color:var(--muted); line-height:1.6; }
+    .note-box{ background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:13px; font-size:12.5px; color:var(--muted); line-height:1.7; }
+    .master-title-row{ display:flex; justify-content:space-between; align-items:center; }
+    .rate-flag{ font-size:10px; color:var(--faint); }
 
+    /* tab bar */
     .tabs{
-      position:fixed; left:50%; transform:translateX(-50%);
-      bottom:0; width:100%; max-width:520px;
-      padding:10px 10px calc(var(--safe-bottom) + 2px);
-      background:rgba(245,248,252,.72);
-      backdrop-filter:blur(22px);
-      border-top:1px solid rgba(215,227,245,.75);
-      z-index:40;
+      position:fixed; left:0; right:0; bottom:0; z-index:50;
+      background:rgba(255,255,255,.92); backdrop-filter:saturate(180%) blur(12px);
+      -webkit-backdrop-filter:saturate(180%) blur(12px);
+      border-top:1px solid var(--line);
+      padding-bottom:var(--safe-bottom);
     }
-    .tabs-inner{
-      background:rgba(255,255,255,.94);
-      border:1px solid #e1eaf7;
-      border-radius:32px;
-      box-shadow:0 18px 46px rgba(35,64,120,.16);
-      display:grid;
-      grid-template-columns:repeat(5,1fr);
-      padding:10px 8px 8px;
-    }
+    .tabs-inner{ max-width:520px; margin:0 auto; display:flex; }
     .tab{
-      background:transparent; color:#8891a1; border:none;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      gap:6px; padding:10px 4px;
-      border-radius:18px;
-      min-height:84px;
+      flex:1; background:transparent; padding:9px 0 7px; display:flex; flex-direction:column;
+      align-items:center; gap:3px; color:var(--faint);
     }
-    .tab .icon{
-      font-size:27px; line-height:1;
-    }
-    .tab .txt{
-      font-size:12px; font-weight:900;
-    }
-    .tab.active{color:var(--primary)}
-    .tab.active .icon{
-      transform:translateY(-1px);
-    }
+    .tab svg{ width:23px; height:23px; stroke:currentColor; fill:none; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+    .tab .txt{ font-size:10.5px; font-weight:600; }
+    .tab.active{ color:var(--primary); }
 
-    .modal{
-      position:fixed; inset:0; display:none; align-items:stretch; justify-content:center;
-      padding:var(--safe-top) 10px var(--safe-bottom);
-      background:rgba(15,23,42,.54);
-      z-index:90;
-    }
-    .modal.active{display:flex}
+    /* modal */
+    .modal{ display:none; position:fixed; inset:0; z-index:80; background:rgba(20,28,48,.42); align-items:flex-end; justify-content:center; padding:0; }
+    .modal.active{ display:flex; }
     .modal-panel{
-      width:100%; max-width:560px; background:#fff; border-radius:28px;
-      overflow:hidden; box-shadow:0 28px 70px rgba(0,0,0,.22);
-      display:flex; flex-direction:column; max-height:100%;
+      background:var(--panel); width:100%; max-width:520px; border-radius:22px 22px 0 0;
+      padding:18px 18px calc(20px + var(--safe-bottom)); max-height:88vh; overflow:auto;
+      animation:slideup .2s ease;
     }
-    .modal-head{
-      padding:16px 16px 12px; display:flex; justify-content:space-between; gap:12px; align-items:flex-start;
-      border-bottom:1px solid #edf2fa;
-    }
-    .modal-head strong{
-      display:block; font-size:18px; font-weight:900;
-    }
-    .modal-head span{
-      display:block; font-size:12px; color:var(--muted); font-weight:700; margin-top:4px;
-    }
-    .close{
-      width:40px; height:40px; border-radius:999px; background:#f2f6fd; color:#355ec8; padding:0;
-    }
-    .modal-body{
-      padding:16px; overflow:auto; -webkit-overflow-scrolling:touch;
-    }
+    @keyframes slideup{ from{ transform:translateY(28px); opacity:.6 } to{ transform:none; opacity:1 } }
+    @media (prefers-reduced-motion: reduce){ .modal-panel{ animation:none } }
+    .modal-head{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px; }
+    .modal-head strong{ display:block; font-size:17px; font-weight:700; }
+    .modal-head span{ font-size:12px; color:var(--muted); }
+    .close{ background:var(--bg); width:32px; height:32px; border-radius:50%; font-size:18px; color:var(--muted); }
 
-    .empty{
-      text-align:center; color:var(--muted); font-weight:700; padding:30px 8px;
+    .toast{
+      position:fixed; left:50%; transform:translateX(-50%); bottom:calc(var(--tabbar) + var(--safe-bottom) + 16px);
+      background:#1b1d21; color:#fff; font-size:13.5px; font-weight:600; padding:11px 18px; border-radius:999px;
+      z-index:90; opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; max-width:90%; text-align:center;
     }
-
-    @media (max-width:390px){
-      .big-num{font-size:39px}
-      .filters,.form-grid,.owner-grid,.list-summary,.summary-meta,.mini-grid{grid-template-columns:1fr}
-      .donut-center .value{font-size:24px}
-    }
+    .toast.show{ opacity:1; transform:translateX(-50%) translateY(-2px); }
   </style>
 </head>
 <body>
@@ -653,10 +281,10 @@
     </header>
 
     <main>
+      <!-- DASHBOARD -->
       <div id="dashboard" class="screen active">
-        <div class="filters single-button">
-          <label>
-            表示月
+        <div class="filters single">
+          <label>表示月
             <input id="filterMonth" type="hidden" />
             <div class="month-picker-wrap">
               <button type="button" id="filterMonthButton" class="month-picker-btn" onclick="toggleMonthPicker('filterMonth')">表示月を選択</button>
@@ -664,15 +292,14 @@
             </div>
           </label>
           <div class="quick">
-            <button id="goCurrentBtn" class="ghost" style="display:none;" onclick="goCurrentMonth('filterMonth')">現在へ戻る</button>
+            <button id="goCurrentBtn" class="ghost" style="display:none;" onclick="goCurrentMonth('filterMonth')">今月へ</button>
           </div>
         </div>
 
         <div class="filters">
-          <label>
-            表示者
+          <label>表示者
             <select id="filterOwner" onchange="render()">
-              <option value="all">合計</option>
+              <option value="all">2人の合計</option>
               <option value="晴太">晴太</option>
               <option value="香花">香花</option>
             </select>
@@ -680,19 +307,11 @@
           <div></div>
         </div>
 
-
         <section>
-          <div class="card summary-card">
-            <div class="card-head">
-              <div>
-                <div class="card-title">資産合計</div>
-                <div id="summaryMonthText" class="card-sub">更新日時</div>
-              </div>
-              <div class="eye">◉</div>
-            </div>
-
-            <div id="netWorth" class="big-num">¥0<span class="yen">円</span></div>
-            <div id="deltaText" class="delta">¥0</div>
+          <div class="card hero">
+            <div class="eyebrow" id="summaryMonthText">資産合計</div>
+            <div id="netWorth" class="big-num num">¥0<span class="yen">円</span></div>
+            <div id="deltaText" class="delta flat">±¥0</div>
 
             <div class="chart-box">
               <div id="areaChartCard" class="area-wrap small tap-card" onclick="openChartModal('area')"></div>
@@ -708,56 +327,36 @@
 
         <section>
           <div class="owner-grid">
-            <div class="owner-card">
-              <span>晴太 純資産</span>
-              <strong id="harutaNet">¥0</strong>
-            </div>
-            <div class="owner-card">
-              <span>香花 純資産</span>
-              <strong id="kyokaNet">¥0</strong>
-            </div>
+            <div class="owner-card"><span>晴太 純資産</span><strong id="harutaNet" class="num">¥0</strong></div>
+            <div class="owner-card"><span>香花 純資産</span><strong id="kyokaNet" class="num">¥0</strong></div>
           </div>
         </section>
 
         <section>
           <div class="mini-grid">
-            <div id="pieCardWrap" class="card tap-card" onclick="openChartModal('pie')">
-              <div class="tap-badge">拡大</div>
-              <div class="section-title">資産割合</div>
-              <div id="pieCard"></div>
-            </div>
-
             <div class="card">
               <div class="section-title">内訳</div>
-              <div class="summary-meta">
-                <div class="meta-box">
-                  <span>総資産</span>
-                  <strong id="totalAssets">¥0</strong>
-                </div>
-                <div class="meta-box">
-                  <span>総負債</span>
-                  <strong id="totalLiabilities">¥0</strong>
-                </div>
+              <div style="margin-top:10px;">
+                <div class="meta-row"><span>総資産</span><strong id="totalAssets" class="num">¥0</strong></div>
+                <div class="meta-row"><span>総負債</span><strong id="totalLiabilities" class="num">¥0</strong></div>
+                <div class="meta-row"><span>USDレート (1 USD)</span><strong id="usdRateText" class="num">¥157</strong></div>
+                <div class="meta-row"><span>AEDレート (1 AED)</span><strong id="aedRateText" class="num">¥42</strong></div>
               </div>
-              <div class="summary-meta" style="margin-top:10px;">
-                <div class="meta-box">
-                  <span>AEDレート</span>
-                  <strong id="aedRateText">42</strong>
-                </div>
-                <div class="meta-box">
-                  <span>USDレート</span>
-                  <strong id="usdRateText">157</strong>
-                </div>
-              </div>
+            </div>
+
+            <div id="pieCardWrap" class="card tap-card" onclick="openChartModal('pie')">
+              <div class="section-title">資産の種類別割合</div>
+              <div id="pieCard" style="margin-top:12px;"></div>
+              <div class="tap-hint">タップで拡大</div>
             </div>
           </div>
         </section>
       </div>
 
+      <!-- LIST -->
       <div id="list" class="screen">
-        <div class="filters single-button">
-          <label>
-            一覧月
+        <div class="filters single">
+          <label>一覧月
             <input id="listMonth" type="hidden" />
             <div class="month-picker-wrap">
               <button type="button" id="listMonthButton" class="month-picker-btn" onclick="toggleMonthPicker('listMonth')">一覧月を選択</button>
@@ -765,14 +364,13 @@
             </div>
           </label>
           <div class="quick">
-            <button id="goCurrentBtnList" class="ghost" style="display:none;" onclick="goCurrentMonth('listMonth')">現在へ戻る</button>
+            <button id="goCurrentBtnList" class="ghost" style="display:none;" onclick="goCurrentMonth('listMonth')">今月へ</button>
           </div>
         </div>
         <div class="filters">
-          <label>
-            表示者
+          <label>表示者
             <select id="listOwner" onchange="render()">
-              <option value="all">合計</option>
+              <option value="all">2人の合計</option>
               <option value="晴太">晴太</option>
               <option value="香花">香花</option>
             </select>
@@ -780,46 +378,34 @@
           <div></div>
         </div>
 
-
         <section>
           <div class="list-summary">
-            <div class="owner-card">
-              <span>合計</span>
-              <strong id="listTotalNet">¥0</strong>
-            </div>
-            <div class="owner-card">
-              <span>晴太</span>
-              <strong id="listHarutaNet">¥0</strong>
-            </div>
-            <div class="owner-card">
-              <span>香花</span>
-              <strong id="listKyokaNet">¥0</strong>
-            </div>
+            <div class="owner-card"><span>合計</span><strong id="listTotalNet" class="num">¥0</strong></div>
+            <div class="owner-card"><span>晴太</span><strong id="listHarutaNet" class="num">¥0</strong></div>
+            <div class="owner-card"><span>香花</span><strong id="listKyokaNet" class="num">¥0</strong></div>
           </div>
+        </section>
 
+        <section>
           <div id="entryList" class="card"></div>
         </section>
       </div>
 
+      <!-- INPUT -->
       <div id="input" class="screen">
         <section>
           <div class="card">
-            <div class="card-head" style="margin-bottom:12px;">
+            <div class="card-head" style="margin-bottom:14px;">
               <div>
                 <div class="card-title">月次残高を入力</div>
-                <div class="card-sub">最新月が初期表示。過去月も選択できます。</div>
+                <div class="card-sub">同じ月・所有者・項目に入れると上書き保存します。</div>
               </div>
-              
             </div>
 
             <form id="entryForm" class="stack">
               <div class="form-grid">
-                <label>
-                  月
-                  <select id="entryMonth"></select>
-                </label>
-                <label>
-                  所有者
+                <label>月<select id="entryMonth"></select></label>
+                <label>所有者
                   <select id="entryOwner">
                     <option>晴太</option>
                     <option>香花</option>
@@ -827,26 +413,17 @@
                 </label>
               </div>
 
-              <label>
-                種別
+              <label>種別
                 <select id="entryType">
                   <option value="asset">資産</option>
                   <option value="liability">負債</option>
                 </select>
               </label>
 
-              <label>
-                大項目
-                <select id="entryMainCategory"></select>
-              </label>
+              <label>大項目<select id="entryMainCategory"></select></label>
+              <label>小項目<select id="entryAccount"></select></label>
 
-              <label>
-                小項目
-                <select id="entryAccount"></select>
-              </label>
-
-              <label>
-                資産・負債種類
+              <label>資産・負債種類
                 <select id="entryAssetClass">
                   <option>現金</option>
                   <option>株式（インデックス）</option>
@@ -859,24 +436,23 @@
               </label>
 
               <div class="form-grid">
-                <label>
-                  通貨
+                <label>通貨
                   <select id="entryCurrency">
                     <option>JPY</option>
                     <option>AED</option>
                     <option>USD</option>
                   </select>
                 </label>
-                <label>
-                  金額
-                  <input id="entryAmount" type="number" inputmode="decimal" required />
-                </label>
+                <label>金額<input id="entryAmount" type="number" inputmode="decimal" required /></label>
               </div>
 
-              <label>
-                メモ
-                <textarea id="entryMemo" placeholder="例：月末残高 / カード請求予定"></textarea>
+              <label id="entryRateWrap" style="display:none;">
+                <span id="entryRateLabel">換算レート（1 USD = 円）</span>
+                <input id="entryRate" type="number" step="0.0001" inputmode="decimal" />
+                <span class="rate-flag">この月の残高を、この円換算レートで記録します（過去はその当時のレートで残ります）。</span>
               </label>
+
+              <label>メモ<textarea id="entryMemo" placeholder="例：月末残高 / カード請求予定"></textarea></label>
 
               <button type="submit">保存する</button>
             </form>
@@ -884,28 +460,26 @@
         </section>
       </div>
 
+      <!-- MASTERS -->
       <div id="masters" class="screen">
         <section>
           <div class="card stack">
-            <div class="card-head" style="margin-bottom:6px;">
+            <div class="card-head" style="margin-bottom:2px;">
               <div>
-                <div class="card-title">登録リスト</div>
-                <div class="card-sub">大項目 → 小項目 を登録</div>
+                <div class="card-title">項目を登録</div>
+                <div class="card-sub">大項目 → 小項目 を登録します。</div>
               </div>
-              
             </div>
 
             <form id="accountForm" class="stack">
-              <label>
-                種別
+              <label>種別
                 <select id="accountKind">
                   <option value="asset">資産</option>
                   <option value="liability">負債</option>
                 </select>
               </label>
 
-              <label>
-                大項目
+              <label>大項目
                 <select id="accountMainCategory">
                   <option>銀行</option>
                   <option>証券口座</option>
@@ -917,19 +491,16 @@
                 </select>
               </label>
 
-              <label>
-                大項目を追加したい場合
+              <label>大項目を新しく追加する場合
                 <input id="accountMainCategoryCustom" placeholder="例：保険 / 不動産 / 暗号資産" />
               </label>
 
-              <label>
-                小項目名
+              <label>小項目名
                 <input id="accountName" placeholder="例：SBI証券 インデックス" required />
               </label>
 
               <div class="form-grid">
-                <label>
-                  資産・負債種類
+                <label>資産・負債種類
                   <select id="accountAssetClass">
                     <option>現金</option>
                     <option>株式（インデックス）</option>
@@ -940,8 +511,7 @@
                     <option>その他</option>
                   </select>
                 </label>
-                <label>
-                  標準通貨
+                <label>標準通貨
                   <select id="accountCurrency">
                     <option>JPY</option>
                     <option>AED</option>
@@ -950,19 +520,15 @@
                 </label>
               </div>
 
-              <label>
-                資産・負債種類を追加したい場合
+              <label>資産・負債種類を新しく追加する場合
                 <input id="accountAssetClassCustom" placeholder="例：保険 / 不動産 / 暗号資産 / 退職金" />
               </label>
 
               <button type="submit">登録する</button>
             </form>
 
-            <div id="registrationSuccess" style="display:none; margin-top:14px; padding:14px; border-radius:18px; background:#f2f7ff; border:1px solid #cfe0fb;">
-            </div>
-            <div class="master-note">
-              登録済みの小項目は下の一覧から削除できます。月次データで使用中の項目を削除する場合は、関連する月次データも一緒に削除されます。
-            </div>
+            <div id="registrationSuccess" class="note-box" style="display:none;"></div>
+            <div class="master-note">登録済みの小項目は下の一覧から削除できます。月次データで使用中の項目を削除すると、関連する月次データも一緒に削除されます。</div>
           </div>
         </section>
 
@@ -971,35 +537,77 @@
         </section>
       </div>
 
+      <!-- SETTINGS -->
       <div id="settings" class="screen">
         <section>
           <div class="card">
-            <div class="card-head" style="margin-bottom:12px;">
-              <div>
-                <div class="card-title">設定</div>
-                <div class="card-sub">USDレートとバックアップ</div>
-              </div>
-            </div>
-
+            <div class="card-title">為替レート</div>
+            <div class="card-sub" style="margin-bottom:14px;">今後の入力時の初期値になります。AEDはUSDから自動計算します。</div>
             <form id="rateForm" class="stack">
               <div class="form-grid">
-                <label>
-                  1 USD = 円
-                  <input id="rateUSD" type="number" step="0.01" />
-                </label>
-                <label>
-                  1 AED = 円（USDから自動計算）
-                  <input id="rateAED" type="number" step="0.01" readonly />
-                </label>
+                <label>1 USD = 円<input id="rateUSD" type="number" step="0.01" /></label>
+                <label>1 AED = 円（自動）<input id="rateAED" type="number" step="0.01" readonly /></label>
               </div>
               <button type="submit">為替レートを保存</button>
             </form>
+          </div>
+        </section>
 
-            <div class="stack" style="margin-top:14px;">
-              <button class="soft" onclick="downloadBackup()">バックアップをダウンロード</button>
-              <div class="master-note">バックアップは、登録リスト・月次データ・為替設定をJSONファイルとして保存します。復元機能は次の段階で追加できます。</div>
-              <button class="danger" onclick="resetData()">データをリセット</button>
+        <section>
+          <div class="card stack">
+            <div class="card-title">バックアップと同期</div>
+            <div id="backupStatus" class="note-box"></div>
+            <button class="soft" onclick="downloadBackup()">バックアップを書き出す</button>
+
+            <div>
+              <label>バックアップを読み込む（復元・同期）
+                <input id="restoreFile" type="file" accept="application/json,.json" />
+              </label>
+              <div class="filters" style="margin-top:10px;">
+                <button class="soft" type="button" onclick="triggerRestore('merge')">結合して取り込む</button>
+                <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="triggerRestore('replace')">全て置き換える</button>
+              </div>
             </div>
+
+            <div class="note-box">
+              <strong style="color:var(--ink);">2人で使うには（結合の使い方）</strong><br>
+              データは各端末の中だけに保存されます。2人で共有するには、片方が「バックアップを書き出す」でJSONを保存し、AirDropやLINEでもう片方へ送ってください。受け取った側が「結合して取り込む」を押すと、相手の項目・月次データが自分のデータに合わさります（同じ月・所有者・項目は、取り込んだ側が優先）。<br>
+              「全て置き換える」は、今のデータを消して取り込んだ内容に丸ごと入れ替えます（機種変更時の復元向け）。
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="card stack">
+            <div class="card-title">クラウド同期（リアルタイム）</div>
+            <div id="syncStatus" class="note-box"></div>
+
+            <label>家族コード（2人で同じ値にします）
+              <input id="syncFamilyCode" placeholder="例：ogura-xxxxxxxxxxxx" />
+            </label>
+            <button class="ghost" type="button" style="width:auto; padding:9px 14px;" onclick="generateFamilyCode()">家族コードを自動生成</button>
+
+            <label>Firebase設定（コンソールからコピーした firebaseConfig を貼り付け）
+              <textarea id="syncConfig" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..." }' style="min-height:120px;"></textarea>
+            </label>
+
+            <div class="filters">
+              <button class="soft" type="button" onclick="connectSync(true)">接続して同期を開始</button>
+              <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="disconnectSync()">同期を解除</button>
+            </div>
+
+            <div class="note-box">
+              <strong style="color:var(--ink);">使い方</strong><br>
+              2台とも「同じFirebase設定」と「同じ家族コード」を入れて接続すると、入力・編集が自動でリアルタイムに反映されます。Vercel側の特別な設定は不要です（静的ファイルを配信しているだけのため）。設定手順はこの下の説明を参照してください。
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <div class="card stack">
+            <div class="card-title">データ管理</div>
+            <button class="danger" onclick="resetData()">データをリセット</button>
+            <div class="master-note">リセットは元に戻せません。先にバックアップを書き出すことをおすすめします。</div>
           </div>
         </section>
       </div>
@@ -1007,11 +615,21 @@
 
     <div class="tabs">
       <div class="tabs-inner">
-        <button class="tab active" data-tab="dashboard" onclick="showTab('dashboard')"><span class="icon">⌂</span><span class="txt">ホーム</span></button>
-        <button class="tab" data-tab="list" onclick="showTab('list')"><span class="icon">▤</span><span class="txt">一覧</span></button>
-        <button class="tab" data-tab="input" onclick="showTab('input')"><span class="icon">＋</span><span class="txt">入力</span></button>
-        <button class="tab" data-tab="masters" onclick="showTab('masters')"><span class="icon">◎</span><span class="txt">登録</span></button>
-        <button class="tab" data-tab="settings" onclick="showTab('settings')"><span class="icon">⚙</span><span class="txt">設定</span></button>
+        <button class="tab active" data-tab="dashboard" onclick="showTab('dashboard')">
+          <svg viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v9h14v-9"/></svg><span class="txt">ホーム</span>
+        </button>
+        <button class="tab" data-tab="list" onclick="showTab('list')">
+          <svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span class="txt">一覧</span>
+        </button>
+        <button class="tab" data-tab="input" onclick="showTab('input')">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span class="txt">入力</span>
+        </button>
+        <button class="tab" data-tab="masters" onclick="showTab('masters')">
+          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="txt">登録</span>
+        </button>
+        <button class="tab" data-tab="settings" onclick="showTab('settings')">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span class="txt">設定</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1025,19 +643,27 @@
         </div>
         <button class="close" onclick="closeChartModal()">×</button>
       </div>
-      <div id="modalBody" class="modal-body"></div>
+      <div id="modalBody"></div>
     </div>
   </div>
 
+  <div id="toast" class="toast"></div>
+
   <script>
     const STORAGE_KEY = "ogura-family-finance";
+    const AED_PER_USD = 3.6725; // AED is pegged to USD
     let areaRange = "all";
-    let monthDisplayMode = "recent"; // recent / window / years / year
-    let monthWindowEnd = null;
+    let monthDisplayMode = "recent"; // recent / years / year
     let selectedYearForMonthList = null;
     let masterEditMode = false;
     let activeDashboardMonth = null;
     let activeListMonth = null;
+    let pendingRestoreMode = null;
+
+    function uid(prefix){
+      const r = (crypto && crypto.randomUUID) ? crypto.randomUUID().slice(0,8) : Math.random().toString(36).slice(2,10);
+      return `${prefix}_${Date.now().toString(36)}_${r}`;
+    }
 
     const presetAccounts = [
       { id:"acc_smbc", kind:"asset", mainCategory:"銀行", name:"三井住友銀行", assetClass:"現金", currency:"JPY" },
@@ -1050,68 +676,48 @@
       { id:"acc_saison_card", kind:"liability", mainCategory:"クレジットカード", name:"セゾンカード未払", assetClass:"クレジットカード", currency:"JPY" }
     ];
 
+    const defaultMain = ["銀行","証券口座","クレジットカード","現金","外貨口座","ローン","その他"];
+    const defaultAsset = ["現金","株式（インデックス）","株式（個別）","外貨","クレジットカード","ローン","その他"];
+
     const defaultData = {
-      rates:{JPY:1, AED:42, USD:157},
-      mainCategories:["銀行","証券口座","クレジットカード","現金","外貨口座","ローン","その他"],
-      assetClasses:["現金","株式（インデックス）","株式（個別）","外貨","クレジットカード","ローン","その他"],
+      rates:{JPY:1, AED:Number((157/AED_PER_USD).toFixed(2)), USD:157},
+      meta:{ lastBackup:null },
+      mainCategories:[...defaultMain],
+      assetClasses:[...defaultAsset],
       accounts: structuredClone(presetAccounts),
       entries:[
-        {id:1, month:"2025-12", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:950000, memo:""},
-        {id:2, month:"2025-12", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2200000, memo:""},
-        {id:3, month:"2026-01", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1000000, memo:""},
-        {id:4, month:"2026-01", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2300000, memo:""},
-        {id:5, month:"2026-02", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1050000, memo:""},
-        {id:6, month:"2026-02", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2400000, memo:""},
-        {id:7, month:"2026-03", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1120000, memo:""},
-        {id:8, month:"2026-03", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2520000, memo:""},
-        {id:9, month:"2026-04", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1160000, memo:""},
-        {id:10, month:"2026-04", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2650000, memo:""},
-        {id:11, month:"2026-05", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1200000, memo:""},
-        {id:12, month:"2026-05", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2780000, memo:""},
-        {id:13, month:"2026-06", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1250000, memo:""},
-        {id:14, month:"2026-06", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2900000, memo:""},
-        {id:15, month:"2026-06", owner:"晴太", accountId:"acc_sbi_stock", mainCategory:"証券口座", assetClass:"株式（個別）", type:"asset", currency:"JPY", amount:400000, memo:""},
-        {id:16, month:"2026-06", owner:"晴太", accountId:"acc_enbd", mainCategory:"外貨口座", assetClass:"外貨", type:"asset", currency:"AED", amount:35000, memo:""},
-        {id:17, month:"2026-06", owner:"晴太", accountId:"acc_wise_usd", mainCategory:"外貨口座", assetClass:"外貨", type:"asset", currency:"USD", amount:8000, memo:""},
-        {id:18, month:"2026-06", owner:"香花", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:900000, memo:""},
-        {id:19, month:"2026-06", owner:"香花", accountId:"acc_smbc_card", mainCategory:"クレジットカード", assetClass:"クレジットカード", type:"liability", currency:"JPY", amount:120000, memo:""}
+        {id:"e1", month:"2025-12", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:950000, rate:1, memo:""},
+        {id:"e2", month:"2025-12", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2200000, rate:1, memo:""},
+        {id:"e3", month:"2026-01", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1000000, rate:1, memo:""},
+        {id:"e4", month:"2026-01", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2300000, rate:1, memo:""},
+        {id:"e5", month:"2026-02", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1050000, rate:1, memo:""},
+        {id:"e6", month:"2026-02", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2400000, rate:1, memo:""},
+        {id:"e7", month:"2026-03", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1120000, rate:1, memo:""},
+        {id:"e8", month:"2026-03", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2520000, rate:1, memo:""},
+        {id:"e9", month:"2026-04", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1160000, rate:1, memo:""},
+        {id:"e10", month:"2026-04", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2650000, rate:1, memo:""},
+        {id:"e11", month:"2026-05", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1200000, rate:1, memo:""},
+        {id:"e12", month:"2026-05", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2780000, rate:1, memo:""},
+        {id:"e13", month:"2026-06", owner:"晴太", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:1250000, rate:1, memo:""},
+        {id:"e14", month:"2026-06", owner:"晴太", accountId:"acc_sbi_index", mainCategory:"証券口座", assetClass:"株式（インデックス）", type:"asset", currency:"JPY", amount:2900000, rate:1, memo:""},
+        {id:"e15", month:"2026-06", owner:"晴太", accountId:"acc_sbi_stock", mainCategory:"証券口座", assetClass:"株式（個別）", type:"asset", currency:"JPY", amount:400000, rate:1, memo:""},
+        {id:"e16", month:"2026-06", owner:"晴太", accountId:"acc_enbd", mainCategory:"外貨口座", assetClass:"外貨", type:"asset", currency:"AED", amount:35000, rate:Number((157/AED_PER_USD).toFixed(2)), memo:""},
+        {id:"e17", month:"2026-06", owner:"晴太", accountId:"acc_wise_usd", mainCategory:"外貨口座", assetClass:"外貨", type:"asset", currency:"USD", amount:8000, rate:157, memo:""},
+        {id:"e18", month:"2026-06", owner:"香花", accountId:"acc_smbc", mainCategory:"銀行", assetClass:"現金", type:"asset", currency:"JPY", amount:900000, rate:1, memo:""},
+        {id:"e19", month:"2026-06", owner:"香花", accountId:"acc_smbc_card", mainCategory:"クレジットカード", assetClass:"クレジットカード", type:"liability", currency:"JPY", amount:120000, rate:1, memo:""}
       ]
     };
 
     let data = load();
 
-    function load(){
-      const migrationKeys = [
-        STORAGE_KEY,
-        "ogura-family-finance-v15",
-        "ogura-family-finance-v14",
-        "ogura-family-finance-v13",
-        "ogura-family-finance-v12",
-        "ogura-family-finance-v11",
-        "ogura-family-finance-v10",
-        "ogura-family-finance-v9",
-        "ogura-family-finance-v8"
-      ];
-
-      let saved = null;
-      for(const key of migrationKeys){
-        saved = localStorage.getItem(key);
-        if(saved) break;
-      }
-
-      const loaded = saved ? JSON.parse(saved) : structuredClone(defaultData);
-
-      const defaultMain = ["銀行","証券口座","クレジットカード","現金","外貨口座","ローン","その他"];
-      const defaultAsset = ["現金","株式（インデックス）","株式（個別）","外貨","クレジットカード","ローン","その他"];
-
-      loaded.rates = loaded.rates || {JPY:1, AED:42, USD:157};
-      loaded.accounts = loaded.accounts || [];
-      loaded.entries = loaded.entries || [];
-
-      loaded.accounts = loaded.accounts.map(a => {
-        const inferredKind = a.kind || (["クレジットカード","ローン"].includes(a.assetClass || a.category || a.mainCategory) || ["クレジットカード","ローン"].includes(a.mainCategory || a.category) ? "liability" : "asset");
+    function normalize(loaded){
+      loaded.rates = loaded.rates || {JPY:1, AED:Number((157/AED_PER_USD).toFixed(2)), USD:157};
+      loaded.rates.JPY = 1;
+      loaded.meta = loaded.meta || { lastBackup:null };
+      loaded.accounts = (loaded.accounts || []).map(a => {
+        const inferredKind = a.kind || (["クレジットカード","ローン"].includes(a.assetClass || a.mainCategory) ? "liability" : "asset");
         return {
-          id: a.id || "acc_" + Date.now() + Math.random(),
+          id: a.id || uid("acc"),
           kind: inferredKind,
           mainCategory: a.mainCategory || a.category || "その他",
           name: a.name || "未名称",
@@ -1119,21 +725,33 @@
           currency: a.currency || "JPY"
         };
       });
-
-      loaded.entries = loaded.entries.map(e => {
+      loaded.entries = (loaded.entries || []).map(e => {
         const acc = loaded.accounts.find(a => a.id === e.accountId);
+        const currency = e.currency || acc?.currency || "JPY";
+        // historical rate: keep stored rate; for legacy data fall back to current rate (JPY=1)
+        const rate = (typeof e.rate === "number" && e.rate > 0)
+          ? e.rate
+          : (currency === "JPY" ? 1 : (loaded.rates[currency] || 1));
         return {
           ...e,
+          id: e.id || uid("e"),
           mainCategory: e.mainCategory || acc?.mainCategory || "その他",
           assetClass: e.assetClass || acc?.assetClass || "その他",
-          currency: e.currency || acc?.currency || "JPY",
+          currency,
+          rate,
           type: e.type || acc?.kind || "asset"
         };
       });
+      loaded.mainCategories = [...new Set([...(loaded.mainCategories || defaultMain), ...defaultMain, ...loaded.accounts.map(a => a.mainCategory).filter(Boolean)])];
+      loaded.assetClasses = [...new Set([...(loaded.assetClasses || defaultAsset), ...defaultAsset, ...loaded.accounts.map(a => a.assetClass).filter(Boolean)])];
+      return loaded;
+    }
 
-      loaded.mainCategories = [...new Set([...(loaded.mainCategories || defaultMain), ...defaultMain, ...(loaded.accounts || []).map(a => a.mainCategory).filter(Boolean)])];
-      loaded.assetClasses = [...new Set([...(loaded.assetClasses || defaultAsset), ...defaultAsset, ...(loaded.accounts || []).map(a => a.assetClass).filter(Boolean)])];
-
+    function load(){
+      const migrationKeys = [STORAGE_KEY, "ogura-family-finance-v15","ogura-family-finance-v14","ogura-family-finance-v13","ogura-family-finance-v12","ogura-family-finance-v11","ogura-family-finance-v10","ogura-family-finance-v9","ogura-family-finance-v8"];
+      let saved = null;
+      for(const key of migrationKeys){ saved = localStorage.getItem(key); if(saved) break; }
+      const loaded = saved ? normalize(JSON.parse(saved)) : structuredClone(defaultData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
       return loaded;
     }
@@ -1141,129 +759,58 @@
     function save(){
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       render();
+      pushToCloud(false);
     }
 
-    function currentMonthStr(){
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+    /* ---------- helpers ---------- */
+    function currentMonthStr(){ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; }
+    function compareMonth(a,b){ return a.localeCompare(b); }
+    function monthLabel(month){ const [y,m]=month.split("-"); return `${y}年${Number(m)}月`; }
+    function formatJPY(v){ return `¥${Math.round(v).toLocaleString("ja-JP")}`; }
+    function formatAmount(v,c){
+      if(c==="JPY") return `¥${Number(v).toLocaleString("ja-JP")}`;
+      if(c==="AED") return `AED ${Number(v).toLocaleString("en-US")}`;
+      if(c==="USD") return `$${Number(v).toLocaleString("en-US")}`;
+      return Number(v).toLocaleString();
     }
-
-    function compareMonth(a,b){
-      return a.localeCompare(b);
-    }
-
-    function monthLabel(month){
-      const [y,m] = month.split("-");
-      return `${y}年${Number(m)}月`;
-    }
-
-    function formatJPY(value){
-      return `¥${Math.round(value).toLocaleString("ja-JP")}`;
-    }
-
-    function compactJPY(value){
-      const abs = Math.abs(value);
-      if(abs >= 100000000) return `¥${(value/100000000).toFixed(1)}億`;
-      if(abs >= 10000) return `¥${Math.round(value/10000).toLocaleString("ja-JP")}万`;
-      return formatJPY(value);
-    }
-
-    function formatAmount(value,currency){
-      if(currency==="JPY") return `¥${Number(value).toLocaleString("ja-JP")}`;
-      if(currency==="AED") return `AED ${Number(value).toLocaleString("en-US")}`;
-      if(currency==="USD") return `$${Number(value).toLocaleString("en-US")}`;
-      return Number(value).toLocaleString();
-    }
-
     function toJPY(entry){
-      return Number(entry.amount) * (data.rates[entry.currency] || 1);
+      const rate = (typeof entry.rate === "number" && entry.rate > 0) ? entry.rate : (data.rates[entry.currency] || 1);
+      return Number(entry.amount) * rate;
     }
+    function accountById(id){ return data.accounts.find(a=>a.id===id) || {name:"未登録項目", kind:"asset", mainCategory:"その他", assetClass:"その他", currency:"JPY"}; }
 
-    function accountById(id){
-      return data.accounts.find(a=>a.id===id) || {name:"未登録項目", kind:"asset", mainCategory:"その他", assetClass:"その他", currency:"JPY"};
-    }
-
-    function earliestMonth(){
-      // 登録データがない月も過去にさかのぼれるよう、現在年から10年前まで表示対象にする。
-      // 例：2026年なら2016年1月まで選択可能。
-      const curYear = Number(currentMonthStr().slice(0,4));
-      return `${curYear - 10}-01`;
-    }
-
-    function latestRecordedMonth(){
-      const all = data.entries.map(e=>e.month).sort();
-      return all.at(-1) || currentMonthStr();
-    }
-
-    function latestSelectableMonth(){
-      const cur = currentMonthStr();
-      return compareMonth(cur, latestRecordedMonth()) >= 0 ? cur : latestRecordedMonth();
-    }
-
-    // 表示月は「最古の登録月」から「現在月」まで自動生成。
-    // 7月になれば2026年7月、8月になれば2026年8月が自動で追加されます。
-
-    function monthsBetween(start, end){
-      let [sy, sm] = start.split("-").map(Number);
-      const [ey, em] = end.split("-").map(Number);
-      const arr = [];
-      while(sy < ey || (sy===ey && sm <= em)){
-        arr.push(`${sy}-${String(sm).padStart(2,"0")}`);
-        sm++;
-        if(sm===13){ sm=1; sy++; }
-      }
-      return arr;
-    }
-
-    function selectableMonths(){
-      return monthsBetween(earliestMonth(), latestSelectableMonth());
-    }
-
-    function addMonths(month, delta){
-      let [y, m] = month.split("-").map(Number);
-      m += delta;
-      while(m <= 0){ m += 12; y--; }
-      while(m > 12){ m -= 12; y++; }
-      return `${y}-${String(m).padStart(2,"0")}`;
-    }
+    function earliestMonth(){ const y=Number(currentMonthStr().slice(0,4)); return `${y-10}-01`; }
+    function latestRecordedMonth(){ const all=data.entries.map(e=>e.month).sort(); return all.at(-1) || currentMonthStr(); }
+    function latestSelectableMonth(){ const cur=currentMonthStr(); return compareMonth(cur, latestRecordedMonth())>=0 ? cur : latestRecordedMonth(); }
+    function monthsBetween(start,end){ let [sy,sm]=start.split("-").map(Number); const [ey,em]=end.split("-").map(Number); const arr=[]; while(sy<ey||(sy===ey&&sm<=em)){ arr.push(`${sy}-${String(sm).padStart(2,"0")}`); sm++; if(sm===13){sm=1;sy++;} } return arr; }
+    function selectableMonths(){ return monthsBetween(earliestMonth(), latestSelectableMonth()); }
+    function addMonths(month,delta){ let [y,m]=month.split("-").map(Number); m+=delta; while(m<=0){m+=12;y--;} while(m>12){m-=12;y++;} return `${y}-${String(m).padStart(2,"0")}`; }
 
     function visibleMonthOptions(){
       const all = selectableMonths();
       const latest = latestSelectableMonth();
-
       if(monthDisplayMode === "years"){
         const latestYear = Number(latest.slice(0,4));
         const earliestYear = Number(earliestMonth().slice(0,4));
-        const opts = [];
-        opts.push({ value:"__recent__", label:"直近6か月に戻す" });
-        for(let y = latestYear; y >= earliestYear; y--){
-          opts.push({ value:`__year__${y}`, label:`${y}年` });
-        }
+        const opts = [{ value:"__recent__", label:"直近6か月に戻す" }];
+        for(let y=latestYear; y>=earliestYear; y--) opts.push({ value:`__year__${y}`, label:`${y}年` });
         return opts;
       }
-
       if(monthDisplayMode === "year"){
         const y = selectedYearForMonthList || Number(latest.slice(0,4));
         const yearMonths = all.filter(m => m.startsWith(String(y)));
-        const opts = [
-          { value:"__years__", label:"年一覧に戻る" }
-        ];
+        const opts = [{ value:"__years__", label:"年一覧に戻る" }];
         yearMonths.forEach(m => opts.push({ value:m, label:monthLabel(m) }));
         return opts;
       }
-
-      // 通常表示：直近6か月 + 一番上に「〇月以前を表示」
-      const safeLatestIndex = all.indexOf(latest) >= 0 ? all.indexOf(latest) : all.length - 1;
+      const safeLatestIndex = all.indexOf(latest) >= 0 ? all.indexOf(latest) : all.length-1;
       const startIndex = Math.max(0, safeLatestIndex - 5);
       const visible = all.slice(startIndex, safeLatestIndex + 1);
       const opts = visible.map(m => ({ value:m, label:monthLabel(m) }));
-
       if(visible.length && startIndex > 0){
         const prev = addMonths(visible[0], -1);
-        // 以前を表示を押すと、前の6か月ではなく、すぐ年一覧へ
         opts.unshift({ value:"__years__", label:`${monthLabel(prev)}以前を表示` });
       }
-
       return opts;
     }
 
@@ -1272,219 +819,86 @@
       const button = document.getElementById(`${targetId}Button`);
       const panel = document.getElementById(`${targetId}Panel`);
       if(!button || !panel) return;
-
       button.textContent = monthLabel(activeMonth);
-
       const options = visibleMonthOptions();
-      const activeShown = options.some(o => o.value === activeMonth);
-      const fullOptions = options;
-
-      panel.innerHTML = fullOptions.map(o => {
+      panel.innerHTML = options.map(o=>{
         const isControl = o.value.startsWith("__");
         const isActive = o.value === activeMonth;
-        return `<button type="button" class="month-option ${isControl ? "control" : ""} ${isActive ? "active" : ""}" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); chooseMonthOption('${targetId}', '${o.value}')">${o.label}</button>`;
+        return `<button type="button" class="month-option ${isControl?"control":""} ${isActive?"active":""}" onmousedown="event.preventDefault()" onclick="event.stopPropagation(); chooseMonthOption('${targetId}','${o.value}')">${o.label}</button>`;
       }).join("");
     }
-
     function toggleMonthPicker(targetId){
       const panel = document.getElementById(`${targetId}Panel`);
       const otherPanel = document.getElementById(targetId === "filterMonth" ? "listMonthPanel" : "filterMonthPanel");
       if(otherPanel) otherPanel.classList.remove("active");
       panel.classList.toggle("active");
     }
-
-    function keepMonthPickerOpen(targetId){
-      const panel = document.getElementById(`${targetId}Panel`);
-      if(panel) panel.classList.add("active");
-    }
-
-    function closeMonthPickers(){
-      document.querySelectorAll(".month-picker-panel").forEach(p => p.classList.remove("active"));
-    }
+    function keepMonthPickerOpen(targetId){ const p=document.getElementById(`${targetId}Panel`); if(p) p.classList.add("active"); }
+    function closeMonthPickers(){ document.querySelectorAll(".month-picker-panel").forEach(p=>p.classList.remove("active")); }
 
     function chooseMonthOption(targetId, value){
-      // コントロール項目は、リストを閉じずに中身だけ切り替える
-      if(value === "__years__"){
-        monthDisplayMode = "years";
-        render();
-        setTimeout(() => keepMonthPickerOpen(targetId), 0);
-        return;
-      }
-
-      if(value.startsWith("__year__")){
-        const year = Number(value.replace("__year__", ""));
-        monthDisplayMode = "year";
-        selectedYearForMonthList = year;
-        render();
-        setTimeout(() => keepMonthPickerOpen(targetId), 0);
-        return;
-      }
-
-      if(value === "__recent__"){
-        monthDisplayMode = "recent";
-        monthWindowEnd = null;
-        selectedYearForMonthList = null;
-        render();
-        setTimeout(() => keepMonthPickerOpen(targetId), 0);
-        return;
-      }
-
-      // 実際の月を選んだ時だけ、資産表示を更新して閉じる
-      if(targetId === "filterMonth"){
-        activeDashboardMonth = value;
-        document.getElementById("filterMonth").value = value;
-      }
-      if(targetId === "listMonth"){
-        activeListMonth = value;
-        document.getElementById("listMonth").value = value;
-      }
-
-      render();
-      closeMonthPickers();
+      if(value === "__years__"){ monthDisplayMode="years"; render(); setTimeout(()=>keepMonthPickerOpen(targetId),0); return; }
+      if(value.startsWith("__year__")){ monthDisplayMode="year"; selectedYearForMonthList=Number(value.replace("__year__","")); render(); setTimeout(()=>keepMonthPickerOpen(targetId),0); return; }
+      if(value === "__recent__"){ monthDisplayMode="recent"; selectedYearForMonthList=null; render(); setTimeout(()=>keepMonthPickerOpen(targetId),0); return; }
+      if(targetId === "filterMonth"){ activeDashboardMonth=value; document.getElementById("filterMonth").value=value; }
+      if(targetId === "listMonth"){ activeListMonth=value; document.getElementById("listMonth").value=value; }
+      render(); closeMonthPickers();
     }
+    document.addEventListener("click",(e)=>{ if(!e.target.closest(".month-picker-wrap")) closeMonthPickers(); });
 
-    document.addEventListener("click", (event) => {
-      if(!event.target.closest(".month-picker-wrap")){
-        closeMonthPickers();
-      }
-    });
-
-    function handleMonthSelect(selectId){
-      const el = document.getElementById(selectId);
-      const value = el.value;
-
-      // コントロール項目を選んだ時は、資産表示月は変えずにリストの表示だけ切り替える
-      if(value.startsWith("__older_window__")){
-        const endMonth = value.replace("__older_window__", "");
-        monthDisplayMode = "window";
-        monthWindowEnd = endMonth;
-        render();
-        return;
-      }
-
-      if(value === "__years__"){
-        monthDisplayMode = "years";
-        render();
-        return;
-      }
-
-      if(value.startsWith("__year__")){
-        const year = Number(value.replace("__year__", ""));
-        monthDisplayMode = "year";
-        selectedYearForMonthList = year;
-        render();
-        return;
-      }
-
-      if(value === "__recent__"){
-        monthDisplayMode = "recent";
-        monthWindowEnd = null;
-        selectedYearForMonthList = null;
-        render();
-        return;
-      }
-
-      // 実際の月を選んだ時だけ、資産表示月を変更する
-      if(selectId === "filterMonth"){
-        activeDashboardMonth = value;
-      }
-      if(selectId === "listMonth"){
-        activeListMonth = value;
-      }
-
-      render();
-    }
-
-    function resetMonthDisplay(){
-      monthDisplayMode = "recent";
-      monthWindowEnd = null;
-      selectedYearForMonthList = null;
-      activeDashboardMonth = latestSelectableMonth();
-      activeListMonth = latestSelectableMonth();
-      render();
-    }
-
-    function selectedDashboardMonth(){
-      return activeDashboardMonth || latestSelectableMonth();
-    }
-    function selectedDashboardOwner(){
-      return document.getElementById("filterOwner").value || "all";
-    }
-    function selectedListMonth(){
-      return activeListMonth || latestSelectableMonth();
-    }
-    function selectedListOwner(){
-      return document.getElementById("listOwner").value || "all";
-    }
+    function selectedDashboardMonth(){ return activeDashboardMonth || latestSelectableMonth(); }
+    function selectedDashboardOwner(){ return document.getElementById("filterOwner").value || "all"; }
+    function selectedListMonth(){ return activeListMonth || latestSelectableMonth(); }
+    function selectedListOwner(){ return document.getElementById("listOwner").value || "all"; }
+    function ownerLabel(o){ return o==="all" ? "2人の合計" : o; }
 
     function snapshotEntriesUpTo(month, owner="all"){
       const filtered = data.entries
         .filter(e => compareMonth(e.month, month) <= 0)
         .filter(e => owner==="all" || e.owner===owner)
-        .sort((a,b) => compareMonth(a.month,b.month));
-
+        .sort((a,b)=>compareMonth(a.month,b.month));
       const map = new Map();
-      filtered.forEach(e => {
-        const key = `${e.owner}__${e.accountId}`;
-        map.set(key, e);
-      });
+      filtered.forEach(e => map.set(`${e.owner}__${e.accountId}`, e));
       return Array.from(map.values()).sort((a,b)=>{
-        if(a.mainCategory !== b.mainCategory) return a.mainCategory.localeCompare(b.mainCategory, "ja");
+        if(a.mainCategory !== b.mainCategory) return a.mainCategory.localeCompare(b.mainCategory,"ja");
         return a.accountId.localeCompare(b.accountId);
       });
     }
-
     function totalsForSnapshot(month, owner="all"){
       const entries = snapshotEntriesUpTo(month, owner);
-      const assets = entries.filter(e=>e.type==="asset").reduce((s,e)=>s + toJPY(e), 0);
-      const liabilities = entries.filter(e=>e.type==="liability").reduce((s,e)=>s + toJPY(e), 0);
-      return { assets, liabilities, net: assets - liabilities, entries };
+      const assets = entries.filter(e=>e.type==="asset").reduce((s,e)=>s+toJPY(e),0);
+      const liabilities = entries.filter(e=>e.type==="liability").reduce((s,e)=>s+toJPY(e),0);
+      return { assets, liabilities, net:assets-liabilities, entries };
     }
+    function previousMonth(month){ const months=selectableMonths(); const idx=months.indexOf(month); return idx>0 ? months[idx-1] : null; }
 
-    function previousMonth(month){
-      const months = selectableMonths();
-      const idx = months.indexOf(month);
-      return idx > 0 ? months[idx-1] : null;
-    }
-
+    /* ---------- selects ---------- */
     function refreshMasterSelectOptions(){
       const mainSelect = document.getElementById("accountMainCategory");
       const assetSelect = document.getElementById("accountAssetClass");
       if(!mainSelect || !assetSelect) return;
-
-      const currentMain = mainSelect.value;
-      const currentAsset = assetSelect.value;
-
-      data.mainCategories = [...new Set([...(data.mainCategories || []), ...data.accounts.map(a => a.mainCategory).filter(Boolean)])];
-      data.assetClasses = [...new Set([...(data.assetClasses || []), ...data.accounts.map(a => a.assetClass).filter(Boolean)])];
-
-      mainSelect.innerHTML = data.mainCategories.map(v => `<option value="${v}">${v}</option>`).join("");
-      assetSelect.innerHTML = data.assetClasses.map(v => `<option value="${v}">${v}</option>`).join("");
-
-      if(data.mainCategories.includes(currentMain)) mainSelect.value = currentMain;
-      if(data.assetClasses.includes(currentAsset)) assetSelect.value = currentAsset;
+      const cm = mainSelect.value, ca = assetSelect.value;
+      data.mainCategories = [...new Set([...(data.mainCategories||[]), ...data.accounts.map(a=>a.mainCategory).filter(Boolean)])];
+      data.assetClasses = [...new Set([...(data.assetClasses||[]), ...data.accounts.map(a=>a.assetClass).filter(Boolean)])];
+      mainSelect.innerHTML = data.mainCategories.map(v=>`<option value="${v}">${v}</option>`).join("");
+      assetSelect.innerHTML = data.assetClasses.map(v=>`<option value="${v}">${v}</option>`).join("");
+      if(data.mainCategories.includes(cm)) mainSelect.value = cm;
+      if(data.assetClasses.includes(ca)) assetSelect.value = ca;
     }
 
     function fillSelects(){
       refreshMasterSelectOptions();
       const allMonths = selectableMonths();
-      const visibleOptions = visibleMonthOptions();
-      const visibleMonths = visibleOptions.map(o => o.value).filter(v => !v.startsWith("__"));
       const latest = latestSelectableMonth();
-
-      const allMonthOptions = allMonths.map(m => `<option value="${m}">${monthLabel(m)}</option>`).join("");
-
-      const filterMonth = document.getElementById("filterMonth");
-      const listMonth = document.getElementById("listMonth");
-      const entryMonth = document.getElementById("entryMonth");
+      const allMonthOptions = allMonths.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join("");
 
       if(!activeDashboardMonth) activeDashboardMonth = latest;
       if(!activeListMonth) activeListMonth = latest;
 
+      const entryMonth = document.getElementById("entryMonth");
       const oldEntry = entryMonth.value || latest;
-
-      filterMonth.value = activeDashboardMonth;
-      listMonth.value = activeListMonth;
+      document.getElementById("filterMonth").value = activeDashboardMonth;
+      document.getElementById("listMonth").value = activeListMonth;
       entryMonth.innerHTML = allMonthOptions;
       entryMonth.value = allMonths.includes(oldEntry) ? oldEntry : latest;
 
@@ -1493,58 +907,53 @@
 
       const entryMainCategory = document.getElementById("entryMainCategory");
       const entryAccount = document.getElementById("entryAccount");
-      const entryType = document.getElementById("entryType");
-      const selectedKind = entryType.value || "asset";
+      const selectedKind = document.getElementById("entryType").value || "asset";
       const oldMain = entryMainCategory.value;
       const oldAccount = entryAccount.value;
 
-      const mainCategories = data.mainCategories.filter(category =>
-        data.accounts.some(a => a.kind === selectedKind && a.mainCategory === category)
-      );
+      const mainCategories = data.mainCategories.filter(c => data.accounts.some(a=>a.kind===selectedKind && a.mainCategory===c));
+      entryMainCategory.innerHTML = mainCategories.length ? mainCategories.map(c=>`<option value="${c}">${c}</option>`).join("") : `<option value="">該当する大項目がありません</option>`;
+      entryMainCategory.value = mainCategories.includes(oldMain) ? oldMain : (mainCategories[0]||"");
 
-      entryMainCategory.innerHTML = mainCategories.length
-        ? mainCategories.map(c=>`<option value="${c}">${c}</option>`).join("")
-        : `<option value="">該当する大項目がありません</option>`;
-      entryMainCategory.value = mainCategories.includes(oldMain) ? oldMain : (mainCategories[0] || "");
-
-      const accounts = data.accounts.filter(a=>a.kind === selectedKind && a.mainCategory===entryMainCategory.value);
-      entryAccount.innerHTML = accounts.length
-        ? accounts.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join("")
-        : `<option value="">小項目を登録してください</option>`;
+      const accounts = data.accounts.filter(a=>a.kind===selectedKind && a.mainCategory===entryMainCategory.value);
+      entryAccount.innerHTML = accounts.length ? accounts.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join("") : `<option value="">小項目を登録してください</option>`;
       if(accounts.some(a=>a.id===oldAccount)) entryAccount.value = oldAccount;
       else if(accounts[0]) entryAccount.value = accounts[0].id;
 
       applyAccountDefaults();
     }
 
+    /* ---------- render ---------- */
     function render(){
       fillSelects();
-
       const month = selectedDashboardMonth();
       const owner = selectedDashboardOwner();
       const totals = totalsForSnapshot(month, owner);
       const prevMonth = previousMonth(month);
-      const prevTotals = prevMonth ? totalsForSnapshot(prevMonth, owner) : { net: 0 };
+      const prevTotals = prevMonth ? totalsForSnapshot(prevMonth, owner) : { net:0 };
 
-      document.getElementById("summaryMonthText").textContent = `${monthLabel(month)} 時点`;
+      document.getElementById("summaryMonthText").textContent = `資産合計 ・ ${monthLabel(month)}時点`;
       document.getElementById("netWorth").innerHTML = `${formatJPY(totals.net).replace("¥","")}<span class="yen">円</span>`;
+
       const diff = totals.net - prevTotals.net;
-      const diffPct = prevTotals.net ? ((diff / prevTotals.net) * 100) : 0;
-      document.getElementById("deltaText").textContent = `${diff >= 0 ? "+" : ""}${formatJPY(diff)} (${diffPct >= 0 ? "+" : ""}${diffPct.toFixed(2)}%)`;
+      const diffPct = prevTotals.net ? (diff/prevTotals.net*100) : 0;
+      const deltaEl = document.getElementById("deltaText");
+      const sign = diff>0 ? "+" : (diff<0 ? "−" : "±");
+      deltaEl.textContent = `前月比 ${sign}${formatJPY(Math.abs(diff)).replace("¥","¥")} (${diffPct>=0?"+":""}${diffPct.toFixed(1)}%)`;
+      deltaEl.className = "delta " + (diff>0?"up":diff<0?"down":"flat");
 
       document.getElementById("totalAssets").textContent = formatJPY(totals.assets);
       document.getElementById("totalLiabilities").textContent = formatJPY(totals.liabilities);
-      document.getElementById("harutaNet").textContent = formatJPY(totalsForSnapshot(month, "晴太").net);
-      document.getElementById("kyokaNet").textContent = formatJPY(totalsForSnapshot(month, "香花").net);
-      document.getElementById("aedRateText").textContent = data.rates.AED;
-      document.getElementById("usdRateText").textContent = data.rates.USD;
+      document.getElementById("harutaNet").textContent = formatJPY(totalsForSnapshot(month,"晴太").net);
+      document.getElementById("kyokaNet").textContent = formatJPY(totalsForSnapshot(month,"香花").net);
+      document.getElementById("usdRateText").textContent = `¥${data.rates.USD}`;
+      document.getElementById("aedRateText").textContent = `¥${data.rates.AED}`;
 
-      data.rates.AED = Number((Number(data.rates.USD || 0) / 3.6725).toFixed(2));
       document.getElementById("rateUSD").value = data.rates.USD;
       document.getElementById("rateAED").value = data.rates.AED;
 
       toggleCurrentButtons();
-
+      renderBackupStatus();
       renderAreaChartCard();
       renderPieCard();
       renderList();
@@ -1553,799 +962,639 @@
 
     function toggleCurrentButtons(){
       const latest = latestSelectableMonth();
-      document.getElementById("goCurrentBtn").style.display = selectedDashboardMonth() !== latest ? "inline-flex" : "none";
-      document.getElementById("goCurrentBtnList").style.display = selectedListMonth() !== latest ? "inline-flex" : "none";
+      document.getElementById("goCurrentBtn").style.display = selectedDashboardMonth()!==latest ? "inline-flex" : "none";
+      document.getElementById("goCurrentBtnList").style.display = selectedListMonth()!==latest ? "inline-flex" : "none";
     }
-
     function goCurrentMonth(selectId){
-      monthDisplayMode = "recent";
-      monthWindowEnd = null;
-      selectedYearForMonthList = null;
-      const latest = latestSelectableMonth();
-      if(selectId === "filterMonth") activeDashboardMonth = latest;
-      if(selectId === "listMonth") activeListMonth = latest;
-      document.getElementById(selectId).value = latest;
+      monthDisplayMode="recent"; selectedYearForMonthList=null;
+      const latest=latestSelectableMonth();
+      if(selectId==="filterMonth") activeDashboardMonth=latest;
+      if(selectId==="listMonth") activeListMonth=latest;
+      document.getElementById(selectId).value=latest;
       render();
     }
 
-    function ownerLabel(owner){
-      return owner === "all" ? "合計" : owner;
-    }
-
+    /* ---------- charts ---------- */
     function chartSeriesForRange(month, owner, range){
-      const months = selectableMonths().filter(m => compareMonth(m, month) <= 0);
+      const months = selectableMonths().filter(m=>compareMonth(m,month)<=0);
       let use = months;
-
-      if(range === "3m") use = months.slice(-3);
-      if(range === "6m") use = months.slice(-6);
-      if(range === "1y") use = months.slice(-12);
-      return use.map(m => ({ month:m, value: totalsForSnapshot(m, owner).net }));
+      if(range==="3m") use=months.slice(-3);
+      if(range==="6m") use=months.slice(-6);
+      if(range==="1y") use=months.slice(-12);
+      return use.map(m=>({ month:m, value:totalsForSnapshot(m,owner).net }));
     }
-
-    function createAreaSVG(series, width=460, height=260){
-      const pad = { top:18, right:12, bottom:34, left:50 };
-      const innerW = width - pad.left - pad.right;
-      const innerH = height - pad.top - pad.bottom;
-      const maxVal = Math.max(...series.map(s=>s.value), 1);
-      const minVal = 0;
-      const gridVals = Array.from({length:5}, (_,i)=> minVal + (maxVal - minVal) * (4-i) / 4);
-
-      const points = series.map((s, i) => {
-        const x = pad.left + (series.length === 1 ? innerW/2 : innerW * i / (series.length - 1));
-        const y = pad.top + innerH - ((s.value - minVal) / (maxVal - minVal || 1)) * innerH;
-        return { x, y, ...s };
+    function createAreaSVG(series, width=460, height=220){
+      const pad={top:16,right:14,bottom:28,left:46};
+      const innerW=width-pad.left-pad.right, innerH=height-pad.top-pad.bottom;
+      const maxVal=Math.max(...series.map(s=>s.value),1), minVal=0;
+      const gridVals=Array.from({length:5},(_,i)=>minVal+(maxVal-minVal)*(4-i)/4);
+      const pts=series.map((s,i)=>{
+        const x=pad.left+(series.length===1?innerW/2:innerW*i/(series.length-1));
+        const y=pad.top+innerH-((s.value-minVal)/(maxVal-minVal||1))*innerH;
+        return {x,y,...s};
       });
-
-      const linePath = points.map((p,i)=>`${i===0?'M':'L'} ${p.x} ${p.y}`).join(" ");
-      const areaPath = points.length
-        ? `${linePath} L ${points.at(-1).x} ${pad.top + innerH} L ${points[0].x} ${pad.top + innerH} Z`
-        : "";
-
-      const xLabels = series.map((s,i)=>{
-        const show = series.length <= 4 || i===0 || i===series.length-1 || i===Math.floor((series.length-1)/2);
+      const linePath=pts.map((p,i)=>`${i===0?'M':'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" ");
+      const areaPath=pts.length?`${linePath} L ${pts.at(-1).x.toFixed(1)} ${pad.top+innerH} L ${pts[0].x.toFixed(1)} ${pad.top+innerH} Z`:"";
+      const xLabels=series.map((s,i)=>{
+        const show=series.length<=4||i===0||i===series.length-1||i===Math.floor((series.length-1)/2);
         if(!show) return "";
-        const x = pad.left + (series.length === 1 ? innerW/2 : innerW * i / (series.length - 1));
-        return `<text x="${x}" y="${height-8}" text-anchor="middle" class="axis-label">${s.month}</text>`;
+        const x=pad.left+(series.length===1?innerW/2:innerW*i/(series.length-1));
+        return `<text x="${x.toFixed(1)}" y="${height-7}" text-anchor="middle" class="axis-label">${s.month}</text>`;
       }).join("");
-
-      const yLabels = gridVals.map(v=>{
-        const y = pad.top + innerH - ((v - minVal) / (maxVal - minVal || 1)) * innerH;
-        return `
-          <line x1="${pad.left}" y1="${y}" x2="${width-pad.right}" y2="${y}" class="axis-line" />
-          <text x="${pad.left-8}" y="${y+4}" text-anchor="end" class="axis-label">${Math.round(v/10000)}</text>
-        `;
+      const yLabels=gridVals.map(v=>{
+        const y=pad.top+innerH-((v-minVal)/(maxVal-minVal||1))*innerH;
+        return `<line x1="${pad.left}" y1="${y.toFixed(1)}" x2="${width-pad.right}" y2="${y.toFixed(1)}" class="axis-line"/><text x="${pad.left-6}" y="${(y+3).toFixed(1)}" text-anchor="end" class="axis-label">${Math.round(v/10000)}</text>`;
       }).join("");
-
-      const last = points.at(-1);
-      const dots = last ? `<circle cx="${last.x}" cy="${last.y}" r="5.5" class="area-dot"></circle>` : "";
-
-      return `
-      <svg viewBox="0 0 ${width} ${height}" width="100%" height="100%" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="gradArea" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stop-color="#4a79e0" stop-opacity="0.32"/>
-            <stop offset="100%" stop-color="#4a79e0" stop-opacity="0.04"/>
-          </linearGradient>
-        </defs>
+      const last=pts.at(-1);
+      const dot=last?`<circle cx="${last.x.toFixed(1)}" cy="${last.y.toFixed(1)}" r="4.5" class="area-dot"/>`:"";
+      return `<svg viewBox="0 0 ${width} ${height}" width="100%" height="100%" preserveAspectRatio="none">
+        <defs><linearGradient id="gradArea" x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%" stop-color="#2f5bd0" stop-opacity="0.20"/><stop offset="100%" stop-color="#2f5bd0" stop-opacity="0.02"/>
+        </linearGradient></defs>
         ${yLabels}
-        <line x1="${pad.left}" y1="${pad.top + innerH}" x2="${width-pad.right}" y2="${pad.top + innerH}" class="axis-bottom" />
-        <path d="${areaPath}" class="area-main"></path>
-        <path d="${linePath}" class="line-main"></path>
-        ${dots}
-        ${xLabels}
+        <line x1="${pad.left}" y1="${pad.top+innerH}" x2="${width-pad.right}" y2="${pad.top+innerH}" class="axis-bottom"/>
+        <path d="${areaPath}" class="area-main"/><path d="${linePath}" class="line-main"/>${dot}${xLabels}
       </svg>`;
     }
-
     function renderAreaChartCard(){
-      const month = selectedDashboardMonth();
-      const owner = selectedDashboardOwner();
-      const series = chartSeriesForRange(month, owner, areaRange);
-      document.getElementById("areaChartCard").innerHTML = createAreaSVG(series, 460, 250);
+      const series=chartSeriesForRange(selectedDashboardMonth(), selectedDashboardOwner(), areaRange);
+      document.getElementById("areaChartCard").innerHTML=createAreaSVG(series,460,150);
       updateRangeTabs();
     }
-
-    function setAreaRange(range, event){
-      areaRange = range;
-      updateRangeTabs();
-      renderAreaChartCard();
-    }
-
+    function setAreaRange(range){ areaRange=range; updateRangeTabs(); renderAreaChartCard(); }
     function updateRangeTabs(){
-      const labels = { "3ヶ月":"3m", "6ヶ月":"6m", "1年":"1y", "全期間":"all" };
-      document.querySelectorAll(".range-tab").forEach(btn=>{
-        btn.classList.toggle("active", labels[btn.textContent]===areaRange);
-      });
+      const map={ "3ヶ月":"3m","6ヶ月":"6m","1年":"1y","全期間":"all" };
+      document.querySelectorAll(".range-tab").forEach(b=>b.classList.toggle("active", map[b.textContent]===areaRange));
     }
 
     function pieData(){
-      const month = selectedDashboardMonth();
-      const owner = selectedDashboardOwner();
-      const entries = totalsForSnapshot(month, owner).entries.filter(e=>e.type==="asset");
-      const colors = {
-        "現金":"#2f63d4",
-        "株式（インデックス）":"#67cfa8",
-        "株式（個別）":"#59c5c4",
-        "外貨":"#9dc7ff",
-        "その他":"#c6d4eb"
-      };
-      const order = ["現金","株式（インデックス）","株式（個別）","外貨","その他"];
-      const rows = order.map(k => ({
-        label:k,
-        color:colors[k],
-        amount: entries.filter(e=>e.assetClass===k).reduce((s,e)=>s + toJPY(e), 0)
-      })).filter(r=>r.amount>0);
-      const total = rows.reduce((s,r)=>s+r.amount,0);
+      const entries=totalsForSnapshot(selectedDashboardMonth(), selectedDashboardOwner()).entries.filter(e=>e.type==="asset");
+      const colors={ "現金":"#2f5bd0","株式（インデックス）":"#4f9d7a","株式（個別）":"#6aa9c9","外貨":"#b6c2dd","その他":"#cfd5df" };
+      const order=["現金","株式（インデックス）","株式（個別）","外貨","その他"];
+      const rows=order.map(k=>({ label:k, color:colors[k], amount:entries.filter(e=>e.assetClass===k).reduce((s,e)=>s+toJPY(e),0) })).filter(r=>r.amount>0);
+      const total=rows.reduce((s,r)=>s+r.amount,0);
       return { rows, total };
     }
-
     function renderPieCard(targetId="pieCard"){
-      const target = document.getElementById(targetId);
-      const { rows, total } = pieData();
-      if(!rows.length){
-        target.innerHTML = `<div class="empty">資産データがありません</div>`;
-        return;
-      }
-
-      let deg = 0;
-      const chartRows = rows.map(r=>{
-        const start = deg;
-        const pct = total ? (r.amount/total)*100 : 0;
-        deg += (r.amount/total)*360;
-        const end = deg;
-        const mid = (start + end) / 2;
-        return { ...r, pct, start, end, mid };
-      });
-
-      const gradient = chartRows.map(r => `${r.color} ${r.start}deg ${r.end}deg`).join(", ");
-
-      const currentMonth = selectedDashboardMonth();
-      const prev = previousMonth(currentMonth);
-      const curTotal = total;
-      const prevTotal = prev ? totalsForSnapshot(prev, selectedDashboardOwner()).assets : 0;
-      const diff = curTotal - prevTotal;
-      const diffPct = prevTotal ? (diff/prevTotal*100) : 0;
-
-      const outerLabels = chartRows
-        .filter(r => r.pct >= 4)
-        .map(r => {
-          const radius = 46;
-          const rad = (r.mid - 90) * Math.PI / 180;
-          const x = 50 + Math.cos(rad) * radius;
-          const y = 50 + Math.sin(rad) * radius;
-          const shortLabel = r.label.length > 10 ? r.label.slice(0, 10) + "…" : r.label;
-          return `<div class="donut-label" style="left:${x}%; top:${y}%;">${shortLabel}<span class="pct">${r.pct.toFixed(1)}%</span></div>`;
-        }).join("");
-
-      target.innerHTML = `
+      const target=document.getElementById(targetId);
+      const { rows, total }=pieData();
+      if(!rows.length){ target.innerHTML=`<div class="empty">資産データがありません</div>`; return; }
+      let deg=0;
+      const chartRows=rows.map(r=>{ const start=deg; const pct=total?(r.amount/total)*100:0; deg+=(r.amount/total)*360; return {...r,pct,start,end:deg}; });
+      const gradient=chartRows.map(r=>`${r.color} ${r.start}deg ${r.end}deg`).join(", ");
+      target.innerHTML=`
         <div class="donut-layout">
-          <div class="donut-row-meta">
-            <div class="donut-meta">前月比<strong>${diff >= 0 ? "+" : ""}${formatJPY(diff)} (${diffPct >= 0 ? "+" : ""}${diffPct.toFixed(2)}%)</strong></div>
-            <div class="donut-meta">基準月<strong>${monthLabel(currentMonth)}</strong></div>
-          </div>
-          <div class="donut-wrap">
-            <div class="donut-stage">
-              <div class="donut" style="background:conic-gradient(${gradient});">
-                <div class="donut-center">
-                  <div class="label">評価額 合計</div>
-                  <div class="value">${formatJPY(curTotal).replace("¥","")}円</div>
-                </div>
-              </div>
-              ${outerLabels}
+          <div class="donut-stage">
+            <div class="donut" style="background:conic-gradient(${gradient});">
+              <div class="donut-center"><div class="label">資産合計</div><div class="value num">${formatJPY(total).replace("¥","")}円</div></div>
             </div>
           </div>
           <div class="legend">
-            ${chartRows.map(r=>`<div class="legend-item"><span class="swatch" style="background:${r.color}"></span>${r.label} ${r.pct.toFixed(1)}%</div>`).join("")}
+            ${chartRows.map(r=>`<div class="legend-item"><span class="lab"><span class="swatch" style="background:${r.color}"></span>${r.label}</span><span class="num">${r.pct.toFixed(1)}%</span></div>`).join("")}
           </div>
-        </div>
-      `;
+        </div>`;
     }
 
+    /* ---------- list ---------- */
     function renderList(){
-      const month = selectedListMonth();
-      const owner = selectedListOwner();
-      const box = document.getElementById("entryList");
+      const month=selectedListMonth();
+      const owner=selectedListOwner();
+      const box=document.getElementById("entryList");
+      document.getElementById("listTotalNet").textContent=formatJPY(totalsForSnapshot(month,"all").net);
+      document.getElementById("listHarutaNet").textContent=formatJPY(totalsForSnapshot(month,"晴太").net);
+      document.getElementById("listKyokaNet").textContent=formatJPY(totalsForSnapshot(month,"香花").net);
 
-      document.getElementById("listTotalNet").textContent = formatJPY(totalsForSnapshot(month, "all").net);
-      document.getElementById("listHarutaNet").textContent = formatJPY(totalsForSnapshot(month, "晴太").net);
-      document.getElementById("listKyokaNet").textContent = formatJPY(totalsForSnapshot(month, "香花").net);
-
-      const entries = totalsForSnapshot(month, owner).entries;
-      if(!entries.length){
-        box.innerHTML = `<div class="empty">この時点までのデータがありません。</div>`;
-        return;
-      }
-
-      const sorted = entries.slice().sort((a,b)=>{
-        if(a.type !== b.type) return a.type === "asset" ? -1 : 1;
-        if(a.mainCategory !== b.mainCategory) return a.mainCategory.localeCompare(b.mainCategory, "ja");
-        return accountById(a.accountId).name.localeCompare(accountById(b.accountId).name, "ja");
+      const entries=totalsForSnapshot(month,owner).entries;
+      if(!entries.length){ box.innerHTML=`<div class="empty">この時点までのデータがありません。</div>`; return; }
+      const sorted=entries.slice().sort((a,b)=>{
+        if(a.type!==b.type) return a.type==="asset"?-1:1;
+        if(a.mainCategory!==b.mainCategory) return a.mainCategory.localeCompare(b.mainCategory,"ja");
+        return accountById(a.accountId).name.localeCompare(accountById(b.accountId).name,"ja");
       });
-
-      const groups = {};
+      const groups={};
       sorted.forEach(e=>{
-        const topGroup = e.type === "asset" ? "資産" : "負債";
-        if(!groups[topGroup]) groups[topGroup] = {};
-        if(!groups[topGroup][e.mainCategory]) groups[topGroup][e.mainCategory] = [];
-        groups[topGroup][e.mainCategory].push(e);
+        const top=e.type==="asset"?"資産":"負債";
+        groups[top]=groups[top]||{};
+        groups[top][e.mainCategory]=groups[top][e.mainCategory]||[];
+        groups[top][e.mainCategory].push(e);
       });
-
-      box.innerHTML = `<div class="card-title" style="margin-bottom:6px;">${monthLabel(month)} 時点 / ${ownerLabel(owner)}</div>
-      <div class="card-sub" style="margin-bottom:10px;">指定月を含む、それ以前の最新残高を表示しています。各項目をタップすると推移グラフを表示します。</div>` +
-      ["資産","負債"].filter(top=>groups[top]).map(top=>`
-        <div style="margin-top:16px;">
-          <div class="group-title" style="font-size:17px;">${top}</div>
-          ${Object.keys(groups[top]).map(group=>`
-            <div style="margin-top:10px;">
-              <div class="group-title">${group}</div>
-              ${groups[top][group].map(e=>{
-                const acc = accountById(e.accountId);
-                return `
-                <div class="row tap-row" onclick="openAssetModal('${e.accountId}', '${e.owner}')">
-                  <div>
-                    <div class="row-title">${acc.name}</div>
-                    <div class="row-meta">${e.owner}・${e.type==="asset"?"資産":"負債"}・${e.assetClass}<br>最終更新：${monthLabel(e.month)}${e.memo ? " / " + e.memo : ""}</div>
-                  </div>
-                  <div class="row-amt">
-                    ${formatAmount(e.amount, e.currency)}
-                    <small>${formatJPY(toJPY(e))}</small>
-                  </div>
-                </div>`;
-              }).join("")}
-            </div>
-          `).join("")}
-        </div>
-      `).join("");
+      box.innerHTML=`<div class="card-title" style="margin-bottom:4px;">${monthLabel(month)}時点 ・ ${ownerLabel(owner)}</div>
+        <div class="card-sub" style="margin-bottom:6px;">指定月以前で最後に入力した残高を表示します。各行をタップで推移を表示。</div>`+
+        ["資産","負債"].filter(t=>groups[t]).map(top=>`
+          <div class="group-block">
+            <div class="group-title" style="font-size:15px;">${top}</div>
+            ${Object.keys(groups[top]).map(g=>`
+              <div style="margin-top:8px;">
+                <div class="section-title">${g}</div>
+                ${groups[top][g].map(e=>{
+                  const acc=accountById(e.accountId);
+                  return `<div class="row tap-row" onclick="openAssetModal('${e.accountId}','${e.owner}')">
+                    <div><div class="row-title">${acc.name}</div>
+                      <div class="row-meta">${e.owner}・${e.assetClass}<br>最終更新 ${monthLabel(e.month)}${e.memo?" / "+e.memo:""}</div></div>
+                    <div class="row-amt num">${formatAmount(e.amount,e.currency)}<small>${formatJPY(toJPY(e))}</small></div>
+                  </div>`;
+                }).join("")}
+              </div>`).join("")}
+          </div>`).join("");
     }
 
+    /* ---------- masters ---------- */
     function renderAccountList(){
-      const box = document.getElementById("accountList");
+      const box=document.getElementById("accountList");
+      data.mainCategories=[...new Set([...(data.mainCategories||[]), ...data.accounts.map(a=>a.mainCategory).filter(Boolean)])];
+      data.assetClasses=[...new Set([...(data.assetClasses||[]), ...data.accounts.map(a=>a.assetClass).filter(Boolean)])];
 
-      data.mainCategories = [...new Set([...(data.mainCategories || []), ...data.accounts.map(a=>a.mainCategory).filter(Boolean)])];
-      data.assetClasses = [...new Set([...(data.assetClasses || []), ...data.accounts.map(a=>a.assetClass).filter(Boolean)])];
-
-      const categoryHtml = data.mainCategories.map((group)=> {
-        const accounts = data.accounts.filter(a => a.mainCategory === group);
-        return `
-        <div style="margin-top:14px;" class="reorder-row" data-reorder-kind="mainCategory" data-reorder-value="${group}">
+      const categoryHtml=data.mainCategories.map(group=>{
+        const accounts=data.accounts.filter(a=>a.mainCategory===group);
+        return `<div class="group-block reorder-row" data-reorder-kind="mainCategory" data-reorder-value="${group}">
           <div class="row" style="border-bottom:0; padding-bottom:4px;">
             <div class="group-title">${group}</div>
-            ${masterEditMode ? `
-              <div class="row-actions">
-                ${accounts.length ? "" : `<button class="danger tiny-btn" onclick="deleteMainCategory('${group}')">削除</button>`}
-                <span class="edit-handle" onpointerdown="startReorder(event, 'mainCategory', '${group}')">☷</span>
-              </div>` : ""}
+            ${masterEditMode?`<div class="row-actions">${accounts.length?"":`<button class="danger tiny-btn" onclick="deleteMainCategory('${group}')">削除</button>`}<span class="edit-handle" onpointerdown="startReorder(event,'mainCategory','${group}')">⠿</span></div>`:""}
           </div>
-          ${accounts.length ? accounts.map((a)=>{
-            const usedCount = data.entries.filter(e => e.accountId === a.id).length;
-            return `
-            <div class="row reorder-row" data-reorder-kind="account" data-reorder-value="${a.id}" data-reorder-parent="${group}">
-              <div>
-                <div class="row-title"><span class="kind-badge ${a.kind === "liability" ? "liability" : ""}">${a.kind === "asset" ? "資産" : "負債"}</span>${a.name}</div>
-                <div class="row-meta">${a.assetClass} / ${a.currency}${masterEditMode ? `<br>登録済み月次データ：${usedCount}件` : ""}</div>
-              </div>
-              ${masterEditMode ? `
-                <div class="row-actions">
-                  <button class="danger tiny-btn" onclick="deleteAccount('${a.id}')">削除</button>
-                  <span class="edit-handle" onpointerdown="startReorder(event, 'account', '${a.id}', '${group}')">☷</span>
-                </div>` : ""}
-            </div>
-          `}).join("") : `
-            <div class="row">
-              <div>
-                <div class="row-meta">この大項目にはまだ小項目がありません。</div>
-              </div>
-            </div>`}
-        </div>
-      `}).join("");
+          ${accounts.length?accounts.map(a=>{
+            const usedCount=data.entries.filter(e=>e.accountId===a.id).length;
+            return `<div class="row reorder-row" data-reorder-kind="account" data-reorder-value="${a.id}" data-reorder-parent="${group}">
+              <div><div class="row-title"><span class="kind-badge ${a.kind==="liability"?"liability":""}">${a.kind==="asset"?"資産":"負債"}</span>${a.name}</div>
+                <div class="row-meta">${a.assetClass} / ${a.currency}${masterEditMode?`<br>月次データ ${usedCount}件`:""}</div></div>
+              ${masterEditMode?`<div class="row-actions"><button class="danger tiny-btn" onclick="deleteAccount('${a.id}')">削除</button><span class="edit-handle" onpointerdown="startReorder(event,'account','${a.id}','${group}')">⠿</span></div>`:""}
+            </div>`;
+          }).join(""):`<div class="row"><div class="row-meta">この大項目にはまだ小項目がありません。</div></div>`}
+        </div>`;
+      }).join("");
 
-      const assetHtml = `
-        <div style="margin-top:20px;">
-          <div class="card-title" style="margin-bottom:8px;">登録済みの資産・負債種類</div>
-          ${data.assetClasses.map((assetClass) => {
-            const usedByAccount = data.accounts.some(a => a.assetClass === assetClass);
-            const usedByEntry = data.entries.some(e => e.assetClass === assetClass);
-            return `
-              <div class="row reorder-row" data-reorder-kind="assetClass" data-reorder-value="${assetClass}">
-                <div>
-                  <div class="row-title">${assetClass}</div>
-                  ${masterEditMode ? `<div class="row-meta">${usedByAccount || usedByEntry ? "使用中" : "未使用"}</div>` : ""}
-                </div>
-                ${masterEditMode ? `
-                  <div class="row-actions">
-                    <button class="danger tiny-btn" onclick="deleteAssetClass('${assetClass}')">削除</button>
-                    <span class="edit-handle" onpointerdown="startReorder(event, 'assetClass', '${assetClass}')">☷</span>
-                  </div>` : ""}
-              </div>
-            `;
-          }).join("")}
-        </div>
-      `;
+      const assetHtml=`<div style="margin-top:18px;">
+        <div class="card-title" style="margin-bottom:6px;">資産・負債種類</div>
+        ${data.assetClasses.map(ac=>{
+          const used=data.accounts.some(a=>a.assetClass===ac)||data.entries.some(e=>e.assetClass===ac);
+          return `<div class="row reorder-row" data-reorder-kind="assetClass" data-reorder-value="${ac}">
+            <div><div class="row-title">${ac}</div>${masterEditMode?`<div class="row-meta">${used?"使用中":"未使用"}</div>`:""}</div>
+            ${masterEditMode?`<div class="row-actions"><button class="danger tiny-btn" onclick="deleteAssetClass('${ac}')">削除</button><span class="edit-handle" onpointerdown="startReorder(event,'assetClass','${ac}')">⠿</span></div>`:""}
+          </div>`;
+        }).join("")}
+      </div>`;
 
-      box.innerHTML = `
-        <div class="master-title-row">
-          <div class="card-title">登録済み項目</div>
-          <button id="masterEditButton" class="${masterEditMode ? "soft" : "ghost"} master-edit-btn" onclick="toggleMasterEditMode()">${masterEditMode ? "完了" : "編集"}</button>
-        </div>
-        ${categoryHtml}
-        ${assetHtml}
-      `;
+      box.innerHTML=`<div class="master-title-row"><div class="card-title">登録済み項目</div>
+        <button id="masterEditButton" class="${masterEditMode?"soft":"ghost"}" style="width:auto;padding:8px 14px;" onclick="toggleMasterEditMode()">${masterEditMode?"完了":"編集"}</button></div>
+        ${categoryHtml}${assetHtml}`;
     }
 
+    /* ---------- tabs ---------- */
     function showTab(id){
       document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
       document.getElementById(id).classList.add("active");
       document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
       document.querySelector(`.tab[data-tab="${id}"]`).classList.add("active");
-      if(id==="input") document.getElementById("entryMonth").value = latestSelectableMonth();
+      if(id==="input") document.getElementById("entryMonth").value=latestSelectableMonth();
       window.scrollTo({top:0, behavior:"smooth"});
       render();
     }
 
+    /* ---------- input form ---------- */
+    function updateRateField(){
+      const cur=document.getElementById("entryCurrency").value;
+      const wrap=document.getElementById("entryRateWrap");
+      const rateInput=document.getElementById("entryRate");
+      if(cur==="JPY"){ wrap.style.display="none"; rateInput.value=""; return; }
+      wrap.style.display="block";
+      document.getElementById("entryRateLabel").textContent=`換算レート（1 ${cur} = 円）`;
+      if(!rateInput.value || Number(rateInput.value)<=0) rateInput.value=data.rates[cur]||"";
+    }
     function applyAccountDefaults(){
-      const acc = accountById(document.getElementById("entryAccount").value);
-      document.getElementById("entryCurrency").value = acc.currency || "JPY";
-      document.getElementById("entryAssetClass").value = acc.assetClass || "その他";
-      document.getElementById("entryType").value = acc.kind || "asset";
+      const acc=accountById(document.getElementById("entryAccount").value);
+      document.getElementById("entryCurrency").value=acc.currency||"JPY";
+      document.getElementById("entryAssetClass").value=acc.assetClass||"その他";
+      document.getElementById("entryType").value=acc.kind||"asset";
+      const rateInput=document.getElementById("entryRate");
+      if(rateInput) rateInput.value=""; // reset so it re-defaults to current rate
+      updateRateField();
     }
 
-    document.getElementById("entryType").addEventListener("change", () => {
-      fillSelects();
-    });
-
+    document.getElementById("entryType").addEventListener("change", fillSelects);
     document.getElementById("entryMainCategory").addEventListener("change", ()=>{
-      const main = document.getElementById("entryMainCategory").value;
-      const selectedKind = document.getElementById("entryType").value || "asset";
-      const list = data.accounts.filter(a=>a.kind === selectedKind && a.mainCategory===main);
-      document.getElementById("entryAccount").innerHTML = list.length
-        ? list.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join("")
-        : `<option value="">小項目を登録してください</option>`;
+      const main=document.getElementById("entryMainCategory").value;
+      const kind=document.getElementById("entryType").value||"asset";
+      const list=data.accounts.filter(a=>a.kind===kind && a.mainCategory===main);
+      document.getElementById("entryAccount").innerHTML=list.length?list.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join(""):`<option value="">小項目を登録してください</option>`;
       applyAccountDefaults();
     });
     document.getElementById("entryAccount").addEventListener("change", applyAccountDefaults);
+    document.getElementById("entryCurrency").addEventListener("change", ()=>{ document.getElementById("entryRate").value=""; updateRateField(); });
 
-    document.getElementById("entryForm").addEventListener("submit", (e)=>{
+    document.getElementById("entryForm").addEventListener("submit",(e)=>{
       e.preventDefault();
-      const selectedAccountId = document.getElementById("entryAccount").value;
-      if(!selectedAccountId){
-        alert("先に登録画面で小項目を登録してください。");
-        return;
+      const selectedAccountId=document.getElementById("entryAccount").value;
+      if(!selectedAccountId){ toast("先に登録画面で小項目を登録してください。"); return; }
+      const acc=accountById(selectedAccountId);
+      const currency=document.getElementById("entryCurrency").value;
+      let rate=1;
+      if(currency!=="JPY"){
+        rate=Number(document.getElementById("entryRate").value);
+        if(!rate || rate<=0) rate=data.rates[currency]||1;
       }
-      const acc = accountById(selectedAccountId);
-      const entry = {
-        id: Date.now(),
-        month: document.getElementById("entryMonth").value,
-        owner: document.getElementById("entryOwner").value,
-        accountId: acc.id,
-        mainCategory: acc.mainCategory,
-        assetClass: document.getElementById("entryAssetClass").value,
-        type: acc.kind || document.getElementById("entryType").value,
-        currency: document.getElementById("entryCurrency").value,
-        amount: Number(document.getElementById("entryAmount").value),
-        memo: document.getElementById("entryMemo").value
+      const entry={
+        id:uid("e"),
+        month:document.getElementById("entryMonth").value,
+        owner:document.getElementById("entryOwner").value,
+        accountId:acc.id,
+        mainCategory:acc.mainCategory,
+        assetClass:document.getElementById("entryAssetClass").value,
+        type:acc.kind||document.getElementById("entryType").value,
+        currency,
+        rate,
+        amount:Number(document.getElementById("entryAmount").value),
+        memo:document.getElementById("entryMemo").value
       };
-      const idx = data.entries.findIndex(e => e.month===entry.month && e.owner===entry.owner && e.accountId===entry.accountId);
-      if(idx >= 0) data.entries[idx] = { ...data.entries[idx], ...entry, id:data.entries[idx].id };
+      const idx=data.entries.findIndex(x=>x.month===entry.month && x.owner===entry.owner && x.accountId===entry.accountId);
+      if(idx>=0) data.entries[idx]={ ...data.entries[idx], ...entry, id:data.entries[idx].id };
       else data.entries.push(entry);
 
-      document.getElementById("entryAmount").value = "";
-      document.getElementById("entryMemo").value = "";
-
-      activeDashboardMonth = entry.month;
-      activeListMonth = entry.month;
-      document.getElementById("filterMonth").value = entry.month;
-      document.getElementById("listMonth").value = entry.month;
+      document.getElementById("entryAmount").value="";
+      document.getElementById("entryMemo").value="";
+      activeDashboardMonth=entry.month; activeListMonth=entry.month;
       save();
       showTab("list");
+      toast("保存しました");
     });
 
-    document.getElementById("accountForm").addEventListener("submit", (e)=>{
+    document.getElementById("accountForm").addEventListener("submit",(e)=>{
       e.preventDefault();
-      const name = document.getElementById("accountName").value.trim();
-      const selectedKindForCheck = document.getElementById("accountKind").value;
-      const selectedMainForCheck = (document.getElementById("accountMainCategoryCustom").value.trim() || document.getElementById("accountMainCategory").value);
-      if(data.accounts.some(a=>a.name===name && a.mainCategory === selectedMainForCheck && a.kind === selectedKindForCheck)){
-        alert("同じ種別・大項目内に同じ小項目名がすでに登録されています。");
-        return;
-      }
-      const customMain = document.getElementById("accountMainCategoryCustom").value.trim();
-      const customAssetClass = document.getElementById("accountAssetClassCustom").value.trim();
-      const kind = document.getElementById("accountKind").value;
-      const mainCategory = customMain || document.getElementById("accountMainCategory").value;
-      const assetClass = customAssetClass || document.getElementById("accountAssetClass").value;
-
-      data.mainCategories = [...new Set([...(data.mainCategories || []), mainCategory])];
-      data.assetClasses = [...new Set([...(data.assetClasses || []), assetClass])];
-
-      const registered = {
-        id:"acc_"+Date.now(),
-        kind,
-        mainCategory,
-        name,
-        assetClass,
-        currency:document.getElementById("accountCurrency").value
-      };
-
-      data.accounts.push(registered);
-
-      const success = document.getElementById("registrationSuccess");
-      if(success){
-        success.style.display = "block";
-        success.innerHTML = `
-          <div style="font-weight:900; color:#214fb6; margin-bottom:8px;">登録されました</div>
-          <div style="font-size:13px; line-height:1.7; color:#374151;">
-            種別：<strong>${registered.kind === "asset" ? "資産" : "負債"}</strong><br>
-            大項目：<strong>${registered.mainCategory}</strong><br>
-            小項目：<strong>${registered.name}</strong><br>
-            資産・負債種類：<strong>${registered.assetClass}</strong><br>
-            標準通貨：<strong>${registered.currency}</strong>
-          </div>
-        `;
-      }
-
+      const name=document.getElementById("accountName").value.trim();
+      const kind=document.getElementById("accountKind").value;
+      const customMain=document.getElementById("accountMainCategoryCustom").value.trim();
+      const customAsset=document.getElementById("accountAssetClassCustom").value.trim();
+      const mainCategory=customMain||document.getElementById("accountMainCategory").value;
+      const assetClass=customAsset||document.getElementById("accountAssetClass").value;
+      if(data.accounts.some(a=>a.name===name && a.mainCategory===mainCategory && a.kind===kind)){ toast("同じ種別・大項目に同名の小項目があります。"); return; }
+      data.mainCategories=[...new Set([...(data.mainCategories||[]), mainCategory])];
+      data.assetClasses=[...new Set([...(data.assetClasses||[]), assetClass])];
+      const reg={ id:uid("acc"), kind, mainCategory, name, assetClass, currency:document.getElementById("accountCurrency").value };
+      data.accounts.push(reg);
+      const success=document.getElementById("registrationSuccess");
+      success.style.display="block";
+      success.innerHTML=`<strong style="color:var(--ink)">登録しました</strong><br>${reg.kind==="asset"?"資産":"負債"}／${reg.mainCategory}／${reg.name}（${reg.assetClass}・${reg.currency}）`;
       e.target.reset();
       save();
     });
 
-    document.getElementById("rateForm").addEventListener("submit", (e)=>{
+    document.getElementById("rateForm").addEventListener("submit",(e)=>{
       e.preventDefault();
-      data.rates.USD = Number(document.getElementById("rateUSD").value);
-      data.rates.AED = Number((data.rates.USD / 3.6725).toFixed(2));
+      data.rates.USD=Number(document.getElementById("rateUSD").value)||data.rates.USD;
+      data.rates.AED=Number((data.rates.USD/AED_PER_USD).toFixed(2));
       save();
-      alert("為替レートを保存しました。AEDはUSDから自動計算しました。");
+      toast("為替レートを保存しました");
     });
 
-    function copyPreviousMonth(){
-      const target = document.getElementById("entryMonth").value;
-      const prev = previousMonth(target);
-      if(!prev){
-        alert("前月がありません。");
-        return;
-      }
-      const prevEntries = data.entries.filter(e=>e.month===prev);
-      if(!prevEntries.length){
-        alert("前月データがありません。");
-        return;
-      }
-      let copied = 0;
-      prevEntries.forEach(e=>{
-        const exists = data.entries.some(cur => cur.month===target && cur.owner===e.owner && cur.accountId===e.accountId);
-        if(!exists){
-          data.entries.push({ ...e, id:Date.now()+Math.random(), month:target, memo:e.memo ? `${e.memo}（前月コピー）` : "前月コピー" });
-          copied++;
-        }
-      });
-      save();
-      alert(`${monthLabel(prev)} のデータを ${monthLabel(target)} に ${copied}件コピーしました。`);
-    }
-
-    let reorderState = null;
-
-    function toggleMasterEditMode(){
-      masterEditMode = !masterEditMode;
-      reorderState = null;
-      renderAccountList();
-    }
-
-    function moveInArray(arr, value, direction){
-      const index = arr.indexOf(value);
-      if(index < 0) return arr;
-      const nextIndex = index + direction;
-      if(nextIndex < 0 || nextIndex >= arr.length) return arr;
-      const copy = arr.slice();
-      [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
-      return copy;
-    }
-
-    function moveItemInArray(arr, fromIndex, toIndex){
-      if(fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return arr;
-      const copy = arr.slice();
-      const [item] = copy.splice(fromIndex, 1);
-      copy.splice(toIndex, 0, item);
-      return copy;
-    }
-
-    function startReorder(event, kind, value, parent=""){
+    /* ---------- reorder ---------- */
+    let reorderState=null;
+    function toggleMasterEditMode(){ masterEditMode=!masterEditMode; reorderState=null; renderAccountList(); }
+    function moveItemInArray(arr,from,to){ if(from<0||to<0||from===to) return arr; const c=arr.slice(); const [it]=c.splice(from,1); c.splice(to,0,it); return c; }
+    function startReorder(event,kind,value,parent=""){
       if(!masterEditMode) return;
-      event.preventDefault();
-      event.stopPropagation();
-
-      const row = event.target.closest(".reorder-row");
-      reorderState = {
-        kind,
-        value,
-        parent,
-        sourceRow: row,
-        lastTargetValue: value,
-        changed: false
-      };
-
-      if(row){
-        row.classList.add("dragging");
-        row.style.pointerEvents = "none";
-      }
-
-      try {
-        if(event.target.setPointerCapture) event.target.setPointerCapture(event.pointerId);
-      } catch(e) {}
-
-      document.addEventListener("pointermove", handleReorderMove);
-      document.addEventListener("pointerup", finishReorder, { once:true });
-      document.addEventListener("pointercancel", finishReorder, { once:true });
-    }
-
-    function findReorderTarget(event){
-      const el = document.elementFromPoint(event.clientX, event.clientY);
-      return el?.closest(".reorder-row");
-    }
-
-    function handleReorderMove(event){
-      if(!reorderState) return;
-
-      const target = findReorderTarget(event);
-      document.querySelectorAll(".reorder-row.drag-over").forEach(el => el.classList.remove("drag-over"));
-
-      if(!target) return;
-
-      const targetKind = target.dataset.reorderKind;
-      const targetValue = target.dataset.reorderValue;
-      const targetParent = target.dataset.reorderParent || "";
-
-      if(targetKind !== reorderState.kind) return;
-      if(reorderState.kind === "account" && targetParent !== reorderState.parent) return;
-      if(targetValue === reorderState.value || targetValue === reorderState.lastTargetValue) return;
-
-      target.classList.add("drag-over");
-      applyReorder(reorderState.kind, reorderState.value, targetValue, reorderState.parent);
-      reorderState.lastTargetValue = targetValue;
-      reorderState.changed = true;
-      renderAccountList();
-
-      const selector = `.reorder-row[data-reorder-kind="${reorderState.kind}"][data-reorder-value="${reorderState.value}"]`;
-      const nextRow = document.querySelector(selector);
-      if(nextRow){
-        reorderState.sourceRow = nextRow;
-        nextRow.classList.add("dragging");
-        nextRow.style.pointerEvents = "none";
-      }
-    }
-
-    function applyReorder(kind, sourceValue, targetValue, parent=""){
-      if(kind === "mainCategory"){
-        const from = data.mainCategories.indexOf(sourceValue);
-        const to = data.mainCategories.indexOf(targetValue);
-        data.mainCategories = moveItemInArray(data.mainCategories, from, to);
-      }
-
-      if(kind === "assetClass"){
-        const from = data.assetClasses.indexOf(sourceValue);
-        const to = data.assetClasses.indexOf(targetValue);
-        data.assetClasses = moveItemInArray(data.assetClasses, from, to);
-      }
-
-      if(kind === "account"){
-        const groupAccounts = data.accounts.filter(a => a.mainCategory === parent);
-        const fromGroupIndex = groupAccounts.findIndex(a => a.id === sourceValue);
-        const toGroupIndex = groupAccounts.findIndex(a => a.id === targetValue);
-
-        if(fromGroupIndex >= 0 && toGroupIndex >= 0){
-          const reorderedGroup = moveItemInArray(groupAccounts, fromGroupIndex, toGroupIndex);
-          const result = [];
-          data.mainCategories.forEach(category => {
-            if(category === parent) result.push(...reorderedGroup);
-            else result.push(...data.accounts.filter(a => a.mainCategory === category));
-          });
-          data.accounts = result;
+      event.preventDefault(); event.stopPropagation();
+      reorderState={ kind, value, parent };
+      const move=(ev)=>{
+        const point=ev.touches?ev.touches[0]:ev;
+        const el=document.elementFromPoint(point.clientX,point.clientY);
+        const row=el&&el.closest(`.reorder-row[data-reorder-kind="${kind}"]`);
+        if(!row) return;
+        const targetValue=row.getAttribute("data-reorder-value");
+        if(targetValue===value) return;
+        if(kind==="account"){
+          const fromIdx=data.accounts.findIndex(a=>a.id===value);
+          const toIdx=data.accounts.findIndex(a=>a.id===targetValue);
+          data.accounts=moveItemInArray(data.accounts,fromIdx,toIdx);
+        } else if(kind==="mainCategory"){
+          const fromIdx=data.mainCategories.indexOf(value);
+          const toIdx=data.mainCategories.indexOf(targetValue);
+          data.mainCategories=moveItemInArray(data.mainCategories,fromIdx,toIdx);
+        } else if(kind==="assetClass"){
+          const fromIdx=data.assetClasses.indexOf(value);
+          const toIdx=data.assetClasses.indexOf(targetValue);
+          data.assetClasses=moveItemInArray(data.assetClasses,fromIdx,toIdx);
         }
-      }
-    }
-
-    function finishReorder(){
-      if(!reorderState) return;
-
-      document.removeEventListener("pointermove", handleReorderMove);
-      document.querySelectorAll(".reorder-row.dragging").forEach(el => {
-        el.classList.remove("dragging");
-        el.style.pointerEvents = "";
-      });
-      document.querySelectorAll(".reorder-row.drag-over").forEach(el => el.classList.remove("drag-over"));
-
-      const changed = reorderState.changed;
-      reorderState = null;
-
-      if(changed){
-        save();
-      }else{
         renderAccountList();
-      }
-    }
-
-    function moveMainCategory(category, direction){
-      data.mainCategories = moveInArray(data.mainCategories, category, direction);
-      save();
-    }
-
-    function moveAssetClass(assetClass, direction){
-      data.assetClasses = moveInArray(data.assetClasses, assetClass, direction);
-      save();
+      };
+      const up=()=>{
+        document.removeEventListener("pointermove",move);
+        document.removeEventListener("pointerup",up);
+        reorderState=null;
+        save();
+      };
+      document.addEventListener("pointermove",move);
+      document.addEventListener("pointerup",up);
     }
 
     function deleteAccount(id){
-      const account = accountById(id);
-      const usedEntries = data.entries.filter(e => e.accountId === id);
-      const message = usedEntries.length
-        ? `「${account.name}」は月次データで${usedEntries.length}件使用されています。\n\n削除すると、この小項目と関連する月次データもすべて削除されます。\n本当に削除しますか？`
-        : `「${account.name}」を削除しますか？`;
-
-      if(confirm(message)){
-        data.accounts = data.accounts.filter(a=>a.id!==id);
-        data.entries = data.entries.filter(e=>e.accountId!==id);
-        save();
-
-        const success = document.getElementById("registrationSuccess");
-        if(success){
-          success.style.display = "block";
-          success.innerHTML = `
-            <div style="font-weight:900; color:#db3d5e; margin-bottom:8px;">削除されました</div>
-            <div style="font-size:13px; line-height:1.7; color:#374151;">
-              小項目：<strong>${account.name}</strong><br>
-              削除した月次データ：<strong>${usedEntries.length}件</strong>
-            </div>
-          `;
-        }
-      }
-    }
-
-    function deleteMainCategory(category){
-      const usedByAccounts = data.accounts.some(a => a.mainCategory === category);
-      if(usedByAccounts){
-        alert("この大項目には小項目が登録されているため削除できません。先に小項目を削除してください。");
-        return;
-      }
-
-      if(confirm(`大項目「${category}」を削除しますか？`)){
-        data.mainCategories = data.mainCategories.filter(c => c !== category);
-        save();
-      }
-    }
-
-    function deleteAssetClass(assetClass){
-      const usedByAccount = data.accounts.some(a => a.assetClass === assetClass);
-      const usedByEntry = data.entries.some(e => e.assetClass === assetClass);
-
-      if(usedByAccount || usedByEntry){
-        alert("この資産・負債種類は使用中のため削除できません。関連する小項目を先に削除または変更してください。");
-        return;
-      }
-
-      if(confirm(`資産・負債種類「${assetClass}」を削除しますか？`)){
-        data.assetClasses = data.assetClasses.filter(c => c !== assetClass);
-        save();
-      }
-    }
-
-    function loadPresetAccounts(){
-      presetAccounts.forEach(p=>{
-        if(!data.accounts.some(a=>a.id===p.id || a.name===p.name)){
-          data.accounts.push(structuredClone(p));
-        }
-      });
-      data.mainCategories = [...new Set([...(data.mainCategories || []), ...presetAccounts.map(p => p.mainCategory)])];
-      data.assetClasses = [...new Set([...(data.assetClasses || []), ...presetAccounts.map(p => p.assetClass)])];
+      const acc=accountById(id);
+      const used=data.entries.filter(e=>e.accountId===id).length;
+      const msg=used?`「${acc.name}」を削除すると、関連する月次データ${used}件も削除されます。よろしいですか？`:`小項目「${acc.name}」を削除しますか？`;
+      if(!confirm(msg)) return;
+      data.accounts=data.accounts.filter(a=>a.id!==id);
+      data.entries=data.entries.filter(e=>e.accountId!==id);
       save();
-      alert("初期リストを追加しました。");
+    }
+    function deleteMainCategory(category){
+      if(data.accounts.some(a=>a.mainCategory===category)){ toast("小項目があるため削除できません。"); return; }
+      if(confirm(`大項目「${category}」を削除しますか？`)){ data.mainCategories=data.mainCategories.filter(c=>c!==category); save(); }
+    }
+    function deleteAssetClass(ac){
+      if(data.accounts.some(a=>a.assetClass===ac)||data.entries.some(e=>e.assetClass===ac)){ toast("使用中のため削除できません。"); return; }
+      if(confirm(`資産・負債種類「${ac}」を削除しますか？`)){ data.assetClasses=data.assetClasses.filter(c=>c!==ac); save(); }
     }
 
+    /* ---------- backup / restore ---------- */
+    function renderBackupStatus(){
+      const el=document.getElementById("backupStatus");
+      if(!el) return;
+      const last=data.meta&&data.meta.lastBackup;
+      if(!last){ el.innerHTML=`まだバックアップしていません。データは端末内にのみ保存されています。<br><strong style="color:var(--down)">消えると元に戻せません。</strong> 定期的に書き出してください。`; return; }
+      const days=Math.floor((Date.now()-new Date(last).getTime())/86400000);
+      const when=new Date(last).toLocaleString("ja-JP",{year:"numeric",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
+      const warn=days>=90?` <strong style="color:var(--down)">（${days}日経過：書き出しをおすすめします）</strong>`:` （${days}日前）`;
+      el.innerHTML=`最終バックアップ：${when}${warn}`;
+    }
     function downloadBackup(){
-      const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "ogura-family-finance-v25-backup.json";
-      a.click();
+      data.meta=data.meta||{};
+      data.meta.lastBackup=new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      const stamp=new Date().toISOString().slice(0,10);
+      a.href=url; a.download=`ogura-family-finance-${stamp}.json`; a.click();
       URL.revokeObjectURL(url);
+      renderBackupStatus();
+      toast("バックアップを書き出しました");
+    }
+    function triggerRestore(mode){
+      const input=document.getElementById("restoreFile");
+      if(!input.files||!input.files[0]){ toast("先にJSONファイルを選んでください。"); return; }
+      pendingRestoreMode=mode;
+      const file=input.files[0];
+      const reader=new FileReader();
+      reader.onload=()=>{
+        let incoming;
+        try{ incoming=JSON.parse(reader.result); }
+        catch(err){ toast("ファイルを読み込めませんでした（JSON形式ではありません）。"); return; }
+        if(!incoming || !Array.isArray(incoming.entries)){ toast("このアプリのバックアップファイルではないようです。"); return; }
+        if(mode==="replace"){
+          if(!confirm("今のデータを全て消して、取り込んだ内容に置き換えます。よろしいですか？")) return;
+          data=normalize(incoming);
+        } else {
+          if(!confirm("取り込んだ内容を、今のデータに結合します。よろしいですか？")) return;
+          data=mergeData(data, normalize(incoming));
+        }
+        input.value="";
+        activeDashboardMonth=latestSelectableMonth();
+        activeListMonth=latestSelectableMonth();
+        save();
+        showTab("dashboard");
+        toast(mode==="replace"?"置き換えました":"結合しました");
+      };
+      reader.readAsText(file);
+    }
+    function mergeData(base, incoming){
+      // accounts: by id (incoming wins on conflict)
+      const accMap=new Map();
+      base.accounts.forEach(a=>accMap.set(a.id,a));
+      incoming.accounts.forEach(a=>accMap.set(a.id,a));
+      const accounts=Array.from(accMap.values());
+      // entries: by month|owner|accountId (incoming wins)
+      const entMap=new Map();
+      base.entries.forEach(e=>entMap.set(`${e.month}|${e.owner}|${e.accountId}`, e));
+      incoming.entries.forEach(e=>entMap.set(`${e.month}|${e.owner}|${e.accountId}`, e));
+      const entries=Array.from(entMap.values());
+      const mainCategories=[...new Set([...base.mainCategories, ...incoming.mainCategories])];
+      const assetClasses=[...new Set([...base.assetClasses, ...incoming.assetClasses])];
+      return normalize({
+        rates: base.rates,            // keep this device's current rates
+        meta: base.meta,
+        mainCategories, assetClasses, accounts, entries
+      });
     }
 
     function resetData(){
-      const firstConfirm = confirm("すべての登録リスト・月次データ・設定をリセットします。\nこの操作は取り消せません。続けますか？");
-      if(!firstConfirm) return;
+      if(!confirm("すべての登録・月次データ・設定をリセットします。元に戻せません。続けますか？")) return;
+      const code=prompt("リセットコードを入力してください。");
+      if(code===null) return;
+      if(code!=="0825"){ toast("リセットコードが違います。"); return; }
+      if(!confirm("本当にすべてのデータを削除しますか？")) return;
+      localStorage.removeItem(STORAGE_KEY);
+      data=load();
+      activeDashboardMonth=latestSelectableMonth();
+      activeListMonth=latestSelectableMonth();
+      render(); showTab("dashboard");
+      toast("データをリセットしました");
+    }
 
-      const code = prompt("リセットコードを入力してください。");
-      if(code === null) return;
+    /* ---------- modals ---------- */
+    function assetSeriesForAccount(accountId, owner, endMonth){
+      const months=selectableMonths().filter(m=>compareMonth(m,endMonth)<=0);
+      return months.map(m=>{
+        const item=snapshotEntriesUpTo(m,owner).find(e=>e.accountId===accountId);
+        return { month:m, value:item?toJPY(item):0 };
+      }).filter((p,i,arr)=>p.value!==0||i===arr.length-1);
+    }
+    function openAssetModal(accountId, owner){
+      const acc=accountById(accountId);
+      const month=selectedListMonth();
+      const series=assetSeriesForAccount(accountId, owner, month);
+      const latest=snapshotEntriesUpTo(month,owner).find(e=>e.accountId===accountId);
+      document.getElementById("modalTitle").textContent=acc.name;
+      document.getElementById("modalSubtitle").textContent=`${owner} ・ ${monthLabel(month)}時点 ・ 単体推移`;
+      const lv=latest?toJPY(latest):0;
+      const lt=latest?`${formatAmount(latest.amount,latest.currency)} ／ ${formatJPY(lv)}`:"データなし";
+      document.getElementById("modalBody").innerHTML=`
+        <div class="card" style="border-color:var(--line);">
+          <div class="card-title num">${lt}</div>
+          <div class="card-sub" style="margin-top:4px;">${acc.mainCategory} / ${acc.assetClass}</div>
+          <div class="area-wrap" style="height:300px; margin-top:14px;">${createAreaSVG(series,520,300)}</div>
+        </div>`;
+      openModal();
+    }
+    function openChartModal(type){
+      const month=selectedDashboardMonth(), owner=selectedDashboardOwner();
+      if(type==="area"){
+        document.getElementById("modalTitle").textContent="資産推移";
+        document.getElementById("modalSubtitle").textContent=`${monthLabel(month)} ・ ${ownerLabel(owner)}`;
+        const series=chartSeriesForRange(month,owner,areaRange);
+        document.getElementById("modalBody").innerHTML=`<div class="area-wrap" style="height:340px;">${createAreaSVG(series,520,340)}</div>`;
+      }
+      if(type==="pie"){
+        document.getElementById("modalTitle").textContent="資産の種類別割合";
+        document.getElementById("modalSubtitle").textContent=`${monthLabel(month)} ・ ${ownerLabel(owner)}`;
+        document.getElementById("modalBody").innerHTML=`<div id="modalPie"></div>`;
+        renderPieCard("modalPie");
+      }
+      openModal();
+    }
+    function openModal(){ document.getElementById("chartModal").classList.add("active"); document.body.style.overflow="hidden"; }
+    function closeChartModal(event){ if(event&&event.target.id!=="chartModal") return; document.getElementById("chartModal").classList.remove("active"); document.body.style.overflow=""; }
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeChartModal(); });
 
-      if(code !== "0825"){
-        alert("リセットコードが違います。データは削除されませんでした。");
+    /* ---------- toast ---------- */
+    let toastTimer=null;
+    function toast(msg){
+      const el=document.getElementById("toast");
+      el.textContent=msg; el.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer=setTimeout(()=>el.classList.remove("show"),2200);
+    }
+
+    /* ---------- cloud sync (Firebase Firestore, realtime) ---------- */
+    const FIREBASE_VERSION = "12.14.0";
+    const SYNC_KEY = "ogura-sync-config";
+    const CLIENT_KEY = "ogura-client-id";
+    let syncState = { connected:false, applyingRemote:false, unsub:null, docRef:null, db:null };
+    let pushTimer = null;
+
+    function clientId(){
+      let id = localStorage.getItem(CLIENT_KEY);
+      if(!id){ id = uid("dev"); localStorage.setItem(CLIENT_KEY, id); }
+      return id;
+    }
+    function getSyncConfig(){
+      try{ return JSON.parse(localStorage.getItem(SYNC_KEY) || "null"); }catch(e){ return null; }
+    }
+    function generateFamilyCode(){
+      const rnd = (crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g,"") : (Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
+      document.getElementById("syncFamilyCode").value = "ogura-" + rnd.slice(0,16);
+    }
+    function parseFirebaseConfig(text){
+      if(!text) return null;
+      let t = text.trim();
+      const s = t.indexOf("{"), e = t.lastIndexOf("}");
+      if(s<0 || e<0) return null;
+      t = t.slice(s, e+1);
+      t = t.replace(/'/g, '"');                          // single -> double quotes
+      t = t.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":'); // quote unquoted keys
+      t = t.replace(/,(\s*[}\]])/g, "$1");               // trailing commas
+      try{ return JSON.parse(t); }catch(err){ return null; }
+    }
+
+    function renderSyncStatus(msg, kind){
+      const el = document.getElementById("syncStatus");
+      if(!el) return;
+      const cfg = getSyncConfig();
+      if(msg){ el.innerHTML = msg; return; }
+      if(syncState.connected && cfg){
+        el.innerHTML = `<strong style="color:var(--up)">接続済み</strong> ・ 家族コード：${cfg.familyCode}<br>入力・編集は自動で同期されます。`;
+      } else if(cfg){
+        el.innerHTML = `設定は保存済みですが未接続です。「接続して同期を開始」を押してください。`;
+      } else {
+        el.innerHTML = `未設定です。下のFirebase設定と家族コードを入れて接続すると、2台でリアルタイムに同期します。`;
+      }
+    }
+
+    async function connectSync(fromButton){
+      let familyCode, firebaseConfig;
+      const saved = getSyncConfig();
+      if(fromButton){
+        familyCode = (document.getElementById("syncFamilyCode").value || "").trim();
+        firebaseConfig = parseFirebaseConfig(document.getElementById("syncConfig").value);
+        if(!familyCode){ toast("家族コードを入力してください。"); return; }
+        if(!firebaseConfig || !firebaseConfig.projectId){ toast("Firebase設定を正しく貼り付けてください。"); return; }
+        localStorage.setItem(SYNC_KEY, JSON.stringify({ familyCode, firebaseConfig, enabled:true }));
+      } else if(saved && saved.enabled){
+        familyCode = saved.familyCode; firebaseConfig = saved.firebaseConfig;
+      } else {
         return;
       }
 
-      const finalConfirm = confirm("リセットコードを確認しました。\n本当にすべてのデータを削除しますか？");
-      if(!finalConfirm) return;
+      renderSyncStatus(`接続中…`);
+      try{
+        const [{ initializeApp, getApps, getApp }, { getFirestore, doc, setDoc, onSnapshot }, { getAuth, signInAnonymously }] = await Promise.all([
+          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
+          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`),
+          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-auth.js`)
+        ]);
+        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+        try{ await signInAnonymously(getAuth(app)); }catch(authErr){ /* auth may be disabled; continue, rules may allow */ }
+        const db = getFirestore(app);
+        const docRef = doc(db, "families", familyCode);
 
-      localStorage.removeItem(STORAGE_KEY);
-      data = load();
-      activeDashboardMonth = latestSelectableMonth();
-      activeListMonth = latestSelectableMonth();
-      render();
-      showTab("dashboard");
-      alert("データをリセットしました。");
-    }
+        if(syncState.unsub){ syncState.unsub(); syncState.unsub = null; }
+        syncState.db = db; syncState.docRef = docRef;
 
-    function assetSeriesForAccount(accountId, owner, endMonth){
-      const months = selectableMonths().filter(m => compareMonth(m, endMonth) <= 0);
-      return months.map(m => {
-        const entries = snapshotEntriesUpTo(m, owner);
-        const item = entries.find(e => e.accountId === accountId);
-        return { month:m, value:item ? toJPY(item) : 0 };
-      }).filter((point, index, arr) => point.value !== 0 || index === arr.length - 1);
-    }
+        // store the setDoc reference for pushes
+        syncState._setDoc = setDoc;
 
-    function openAssetModal(accountId, owner){
-      const acc = accountById(accountId);
-      const month = selectedListMonth();
-      const series = assetSeriesForAccount(accountId, owner, month);
-      const latest = snapshotEntriesUpTo(month, owner).find(e => e.accountId === accountId);
+        syncState.unsub = onSnapshot(docRef, (snap)=>{
+          if(!snap.exists()){
+            pushToCloud(true); // seed the cloud with local data
+            return;
+          }
+          const remote = snap.data();
+          if(!remote || remote.writerId === clientId()) return; // ignore own echo
+          let payload;
+          try{ payload = JSON.parse(remote.data); }catch(e){ return; }
+          if(!payload || !Array.isArray(payload.entries)) return;
+          syncState.applyingRemote = true;
+          data = normalize(payload);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          activeDashboardMonth = latestSelectableMonth();
+          activeListMonth = latestSelectableMonth();
+          render();
+          syncState.applyingRemote = false;
+          toast("相手の変更を反映しました");
+        }, (err)=>{
+          syncState.connected = false;
+          renderSyncStatus(`<strong style="color:var(--down)">同期エラー</strong>：${(err && err.code) || "接続できませんでした"}。Firebase設定・Firestoreの作成・ルールを確認してください。`);
+        });
 
-      const modal = document.getElementById("chartModal");
-      const body = document.getElementById("modalBody");
-      const title = document.getElementById("modalTitle");
-      const subtitle = document.getElementById("modalSubtitle");
-
-      title.textContent = acc.name;
-      subtitle.textContent = `${owner} / ${monthLabel(month)} 時点 / 単体推移`;
-
-      const latestValue = latest ? toJPY(latest) : 0;
-      const latestText = latest ? `${formatAmount(latest.amount, latest.currency)} / ${formatJPY(latestValue)}` : "データなし";
-
-      body.innerHTML = `
-        <div class="card" style="box-shadow:none; border-color:#edf2fa;">
-          <div class="card-title">${latestText}</div>
-          <div class="card-sub" style="margin-top:6px;">${acc.mainCategory} / ${acc.assetClass}</div>
-          <div class="area-wrap" style="min-height:360px; margin-top:16px;">${createAreaSVG(series, 520, 360)}</div>
-        </div>
-      `;
-
-      modal.classList.add("active");
-      document.body.style.overflow = "hidden";
-    }
-
-    function openChartModal(type){
-      const modal = document.getElementById("chartModal");
-      const body = document.getElementById("modalBody");
-      const title = document.getElementById("modalTitle");
-      const subtitle = document.getElementById("modalSubtitle");
-      const month = selectedDashboardMonth();
-      const owner = selectedDashboardOwner();
-
-      if(type==="area"){
-        title.textContent = "資産推移";
-        subtitle.textContent = `${monthLabel(month)} / ${ownerLabel(owner)} / 指定月以前の累積残高`;
-        const series = chartSeriesForRange(month, owner, areaRange);
-        body.innerHTML = `<div class="area-wrap" style="min-height:420px;">${createAreaSVG(series, 520, 400)}</div>`;
+        syncState.connected = true;
+        renderSyncStatus();
+        if(fromButton) toast("同期を開始しました");
+        pushToCloud(false); // push current local state up on connect
+      }catch(err){
+        syncState.connected = false;
+        renderSyncStatus(`<strong style="color:var(--down)">同期エラー</strong>：SDKを読み込めませんでした。通信環境を確認してください。`);
       }
-
-      if(type==="pie"){
-        title.textContent = "資産の種類別割合";
-        subtitle.textContent = `${monthLabel(month)} / ${ownerLabel(owner)} / 指定月以前の累積残高`;
-        body.innerHTML = `<div id="modalPie"></div>`;
-        renderPieCard("modalPie");
-      }
-
-      modal.classList.add("active");
-      document.body.style.overflow = "hidden";
     }
 
-    function closeChartModal(event){
-      if(event && event.target.id !== "chartModal") return;
-      document.getElementById("chartModal").classList.remove("active");
-      document.body.style.overflow = "";
+    function disconnectSync(){
+      if(syncState.unsub){ syncState.unsub(); syncState.unsub = null; }
+      syncState.connected = false;
+      const cfg = getSyncConfig();
+      if(cfg){ cfg.enabled = false; localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); }
+      renderSyncStatus();
+      toast("同期を解除しました");
     }
 
-    document.addEventListener("keydown", (e)=>{
-      if(e.key==="Escape") closeChartModal();
-    });
+    function pushToCloud(immediate){
+      if(!syncState.connected || !syncState.docRef || !syncState._setDoc) return;
+      if(syncState.applyingRemote) return;
+      const doPush = async ()=>{
+        try{
+          await syncState._setDoc(syncState.docRef, {
+            data: JSON.stringify(data),
+            writerId: clientId(),
+            updatedAt: Date.now()
+          });
+        }catch(e){ /* network/permission errors surfaced via onSnapshot error */ }
+      };
+      clearTimeout(pushTimer);
+      if(immediate) doPush();
+      else pushTimer = setTimeout(doPush, 700); // debounce rapid edits
+    }
 
-    activeDashboardMonth = latestSelectableMonth();
-    activeListMonth = latestSelectableMonth();
+    function prefillSyncFields(){
+      const cfg = getSyncConfig();
+      if(!cfg) return;
+      const codeEl = document.getElementById("syncFamilyCode");
+      const cfgEl = document.getElementById("syncConfig");
+      if(codeEl && cfg.familyCode) codeEl.value = cfg.familyCode;
+      if(cfgEl && cfg.firebaseConfig) cfgEl.value = JSON.stringify(cfg.firebaseConfig, null, 2);
+    }
+
+    /* ---------- init ---------- */
+    activeDashboardMonth=latestSelectableMonth();
+    activeListMonth=latestSelectableMonth();
     render();
+    prefillSyncFields();
+    renderSyncStatus();
+    // auto-reconnect if previously enabled
+    if(getSyncConfig() && getSyncConfig().enabled){ connectSync(false); }
   </script>
 </body>
 </html>
