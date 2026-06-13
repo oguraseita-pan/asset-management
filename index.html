@@ -159,12 +159,21 @@
     .area-wrap{ width:100%; height:170px; }
     .area-wrap.small{ height:150px; }
     .tap-card{ cursor:pointer; }
-    .range-tabs{ display:flex; gap:6px; margin-top:10px; }
+    .range-tabs{ display:flex; gap:5px; margin-top:10px; }
     .range-tab{
       flex:1; background:var(--bg); color:var(--muted); border:1px solid var(--line);
-      border-radius:9px; padding:8px 0; font-size:12.5px; font-weight:600;
+      border-radius:9px; padding:8px 0; font-size:11.5px; font-weight:600; white-space:nowrap;
     }
     .range-tab.active{ background:var(--primary-soft); color:var(--primary); border-color:transparent; }
+
+    .sync-banner{
+      margin:12px 0 0; padding:13px 15px; border-radius:var(--radius-sm);
+      background:#fbe9ec; border:1px solid #f0ccd2; color:#a3303f;
+      font-size:13px; font-weight:650; line-height:1.6; cursor:pointer;
+      display:flex; align-items:center; gap:10px;
+    }
+    .sync-banner::before{ content:"⚠"; font-size:16px; flex:0 0 auto; }
+    .sync-banner .b-sub{ font-weight:500; color:#b8505d; }
 
     .axis-label{ font-size:9px; fill:var(--faint); }
     .axis-line{ stroke:var(--line); stroke-width:1; }
@@ -283,6 +292,7 @@
     <main>
       <!-- DASHBOARD -->
       <div id="dashboard" class="screen active">
+        <div id="syncBanner" class="sync-banner" style="display:none;" onclick="showTab('settings')"></div>
         <div class="filters single">
           <label>表示月
             <input id="filterMonth" type="hidden" />
@@ -319,6 +329,8 @@
                 <button class="range-tab" onclick="setAreaRange('3m', event)">3ヶ月</button>
                 <button class="range-tab" onclick="setAreaRange('6m', event)">6ヶ月</button>
                 <button class="range-tab" onclick="setAreaRange('1y', event)">1年</button>
+                <button class="range-tab" onclick="setAreaRange('3y', event)">3年</button>
+                <button class="range-tab" onclick="setAreaRange('5y', event)">5年</button>
                 <button class="range-tab active" onclick="setAreaRange('all', event)">全期間</button>
               </div>
             </div>
@@ -555,50 +567,61 @@
 
         <section>
           <div class="card stack">
-            <div class="card-title">バックアップと同期</div>
-            <div id="backupStatus" class="note-box"></div>
-            <button class="soft" onclick="downloadBackup()">バックアップを書き出す</button>
-
-            <div>
-              <label>バックアップを読み込む（復元・同期）
-                <input id="restoreFile" type="file" accept="application/json,.json" />
-              </label>
-              <div class="filters" style="margin-top:10px;">
-                <button class="soft" type="button" onclick="triggerRestore('merge')">結合して取り込む</button>
-                <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="triggerRestore('replace')">全て置き換える</button>
-              </div>
+            <div class="master-title-row">
+              <div class="card-title">バックアップ</div>
+              <button id="backupToggleBtn" class="ghost" type="button" style="width:auto; padding:8px 14px;" onclick="toggleBackupDetails()">詳細設定</button>
             </div>
+            <div id="backupStatus" class="note-box"></div>
 
-            <div class="note-box">
-              <strong style="color:var(--ink);">2人で使うには（結合の使い方）</strong><br>
-              データは各端末の中だけに保存されます。2人で共有するには、片方が「バックアップを書き出す」でJSONを保存し、AirDropやLINEでもう片方へ送ってください。受け取った側が「結合して取り込む」を押すと、相手の項目・月次データが自分のデータに合わさります（同じ月・所有者・項目は、取り込んだ側が優先）。<br>
-              「全て置き換える」は、今のデータを消して取り込んだ内容に丸ごと入れ替えます（機種変更時の復元向け）。
+            <div id="backupDetails" class="stack" style="display:none;">
+              <button class="soft" onclick="downloadBackup()">バックアップを書き出す</button>
+
+              <div>
+                <label>バックアップを読み込む（復元・同期）
+                  <input id="restoreFile" type="file" accept="application/json,.json" />
+                </label>
+                <div class="filters" style="margin-top:10px;">
+                  <button class="soft" type="button" onclick="triggerRestore('merge')">結合して取り込む</button>
+                  <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="triggerRestore('replace')">全て置き換える</button>
+                </div>
+              </div>
+
+              <div class="note-box">
+                <strong style="color:var(--ink);">バックアップが必要な理由</strong><br>
+                クラウド同期は2台の表示を一致させる仕組みで、誤って消した・壊れた状態もそのまま両方に反映されます。書き出したJSONは、その時点の写しを別に固定して残すので、もしもの時に巻き戻せます。月に一度ほど書き出すのがおすすめです。<br><br>
+                「結合して取り込む」は、別端末のJSONを今のデータに合わせます（同じ月・所有者・項目は取り込んだ側が優先）。「全て置き換える」は機種変更時の丸ごと復元向けです。
+              </div>
             </div>
           </div>
         </section>
 
         <section>
           <div class="card stack">
-            <div class="card-title">クラウド同期（リアルタイム）</div>
+            <div class="master-title-row">
+              <div class="card-title">クラウド同期（リアルタイム）</div>
+              <button id="syncToggleBtn" class="ghost" type="button" style="width:auto; padding:8px 14px;" onclick="toggleSyncDetails()">詳細設定</button>
+            </div>
             <div id="syncStatus" class="note-box"></div>
 
-            <label>家族コード（2人で同じ値にします）
-              <input id="syncFamilyCode" placeholder="例：ogura-xxxxxxxxxxxx" />
-            </label>
-            <button class="ghost" type="button" style="width:auto; padding:9px 14px;" onclick="generateFamilyCode()">家族コードを自動生成</button>
+            <div id="syncDetails" class="stack" style="display:none;">
+              <label>家族コード（2人で同じ値にします）
+                <input id="syncFamilyCode" placeholder="例：ogura-xxxxxxxxxxxx" />
+              </label>
+              <button class="ghost" type="button" style="width:auto; padding:9px 14px;" onclick="generateFamilyCode()">家族コードを自動生成</button>
 
-            <label>Firebase設定（コンソールからコピーした firebaseConfig を貼り付け）
-              <textarea id="syncConfig" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..." }' style="min-height:120px;"></textarea>
-            </label>
+              <label>Firebase設定（コンソールからコピーした firebaseConfig を貼り付け）
+                <textarea id="syncConfig" placeholder='{ "apiKey": "...", "authDomain": "...", "projectId": "...", "appId": "..." }' style="min-height:120px;"></textarea>
+              </label>
 
-            <div class="filters">
-              <button class="soft" type="button" onclick="connectSync(true)">接続して同期を開始</button>
-              <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="disconnectSync()">同期を解除</button>
-            </div>
+              <div class="filters">
+                <button class="soft" type="button" onclick="connectSync(true)">接続して同期を開始</button>
+                <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="disconnectSync()">同期を解除</button>
+              </div>
 
-            <div class="note-box">
-              <strong style="color:var(--ink);">使い方</strong><br>
-              2台とも「同じFirebase設定」と「同じ家族コード」を入れて接続すると、入力・編集が自動でリアルタイムに反映されます。Vercel側の特別な設定は不要です（静的ファイルを配信しているだけのため）。設定手順はこの下の説明を参照してください。
+              <div class="note-box">
+                <strong style="color:var(--ink);">使い方</strong><br>
+                2台とも「同じFirebase設定」と「同じ家族コード」を入れて接続すると、入力・編集が自動でリアルタイムに反映されます。一度接続すれば設定は端末に保存され、次回からは自動で再接続します。端末を増やす・機種変更するとき以外は、ここを開く必要はありません。
+              </div>
             </div>
           </div>
         </section>
@@ -954,6 +977,7 @@
 
       toggleCurrentButtons();
       renderBackupStatus();
+      renderSyncBanner();
       renderAreaChartCard();
       renderPieCard();
       renderList();
@@ -981,6 +1005,8 @@
       if(range==="3m") use=months.slice(-3);
       if(range==="6m") use=months.slice(-6);
       if(range==="1y") use=months.slice(-12);
+      if(range==="3y") use=months.slice(-36);
+      if(range==="5y") use=months.slice(-60);
       return use.map(m=>({ month:m, value:totalsForSnapshot(m,owner).net }));
     }
     function createAreaSVG(series, width=460, height=220){
@@ -1023,7 +1049,7 @@
     }
     function setAreaRange(range){ areaRange=range; updateRangeTabs(); renderAreaChartCard(); }
     function updateRangeTabs(){
-      const map={ "3ヶ月":"3m","6ヶ月":"6m","1年":"1y","全期間":"all" };
+      const map={ "3ヶ月":"3m","6ヶ月":"6m","1年":"1y","3年":"3y","5年":"5y","全期間":"all" };
       document.querySelectorAll(".range-tab").forEach(b=>b.classList.toggle("active", map[b.textContent]===areaRange));
     }
 
@@ -1445,7 +1471,7 @@
     const FIREBASE_VERSION = "12.14.0";
     const SYNC_KEY = "ogura-sync-config";
     const CLIENT_KEY = "ogura-client-id";
-    let syncState = { connected:false, applyingRemote:false, unsub:null, docRef:null, db:null };
+    let syncState = { connected:false, connecting:false, applyingRemote:false, unsub:null, docRef:null, db:null };
     let pushTimer = null;
 
     function clientId(){
@@ -1502,6 +1528,8 @@
       }
 
       renderSyncStatus(`接続中…`);
+      syncState.connecting = true;
+      renderSyncBanner();
       try{
         const [{ initializeApp, getApps, getApp }, { getFirestore, doc, setDoc, onSnapshot }, { getAuth, signInAnonymously }] = await Promise.all([
           import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
@@ -1539,16 +1567,22 @@
           toast("相手の変更を反映しました");
         }, (err)=>{
           syncState.connected = false;
+          syncState.connecting = false;
           renderSyncStatus(`<strong style="color:var(--down)">同期エラー</strong>：${(err && err.code) || "接続できませんでした"}。Firebase設定・Firestoreの作成・ルールを確認してください。`);
+          renderSyncBanner();
         });
 
         syncState.connected = true;
+        syncState.connecting = false;
         renderSyncStatus();
-        if(fromButton) toast("同期を開始しました");
+        renderSyncBanner();
+        if(fromButton){ toast("同期を開始しました"); toggleSyncDetails(false); }
         pushToCloud(false); // push current local state up on connect
       }catch(err){
         syncState.connected = false;
+        syncState.connecting = false;
         renderSyncStatus(`<strong style="color:var(--down)">同期エラー</strong>：SDKを読み込めませんでした。通信環境を確認してください。`);
+        renderSyncBanner();
       }
     }
 
@@ -1558,6 +1592,7 @@
       const cfg = getSyncConfig();
       if(cfg){ cfg.enabled = false; localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); }
       renderSyncStatus();
+      renderSyncBanner();
       toast("同期を解除しました");
     }
 
@@ -1578,6 +1613,37 @@
       else pushTimer = setTimeout(doPush, 700); // debounce rapid edits
     }
 
+    function toggleSyncDetails(force){
+      const el = document.getElementById("syncDetails");
+      const btn = document.getElementById("syncToggleBtn");
+      if(!el) return;
+      const open = (typeof force === "boolean") ? force : (el.style.display === "none");
+      el.style.display = open ? "block" : "none";
+      if(btn) btn.textContent = open ? "閉じる" : "詳細設定";
+    }
+
+    function toggleBackupDetails(force){
+      const el = document.getElementById("backupDetails");
+      const btn = document.getElementById("backupToggleBtn");
+      if(!el) return;
+      const open = (typeof force === "boolean") ? force : (el.style.display === "none");
+      el.style.display = open ? "block" : "none";
+      if(btn) btn.textContent = open ? "閉じる" : "詳細設定";
+    }
+
+    function renderSyncBanner(){
+      const el = document.getElementById("syncBanner");
+      if(!el) return;
+      const cfg = getSyncConfig();
+      // show only when sync was set up & enabled but not currently connected
+      if(cfg && cfg.enabled && !syncState.connected && !syncState.connecting){
+        el.style.display = "flex";
+        el.innerHTML = `<div><div>同期が接続されていません</div><div class="b-sub">この端末の変更が相手に届きません。タップして設定を開き、再接続してください。</div></div>`;
+      } else {
+        el.style.display = "none";
+      }
+    }
+
     function prefillSyncFields(){
       const cfg = getSyncConfig();
       if(!cfg) return;
@@ -1593,6 +1659,8 @@
     render();
     prefillSyncFields();
     renderSyncStatus();
+    // collapse sync details if already configured; expand for first-time setup
+    toggleSyncDetails(!getSyncConfig());
     // auto-reconnect if previously enabled
     if(getSyncConfig() && getSyncConfig().enabled){ connectSync(false); }
   </script>
