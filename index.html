@@ -220,13 +220,14 @@
     .tap-hint{ font-size:11px; color:var(--faint); margin-top:10px; text-align:center; }
 
     /* list rows */
-    .row{ display:flex; justify-content:space-between; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--line); }
+    .row{ display:flex; justify-content:space-between; align-items:center; gap:10px; padding:13px 0; border-bottom:1px solid var(--line); }
     .row:last-child{ border-bottom:none; }
+    .row > div:first-child{ flex:1 1 auto; min-width:0; }
     .tap-row{ cursor:pointer; }
     .tap-row:active{ background:var(--bg); border-radius:10px; }
-    .row-title{ font-size:14.5px; font-weight:650; }
+    .row-title{ font-size:14.5px; font-weight:650; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .row-meta{ font-size:11.5px; color:var(--muted); margin-top:3px; line-height:1.5; }
-    .row-amt{ text-align:right; font-size:15px; font-weight:700; white-space:nowrap; }
+    .row-amt{ text-align:right; font-size:14.5px; font-weight:700; white-space:nowrap; flex:0 0 auto; }
     .row-amt small{ display:block; font-size:11px; font-weight:550; color:var(--muted); margin-top:2px; }
     .kind-badge{ font-size:10px; font-weight:700; color:var(--primary); background:var(--primary-soft); border-radius:6px; padding:2px 6px; margin-right:6px; }
     .kind-badge.liability{ color:var(--down); background:#fbe9ec; }
@@ -419,11 +420,20 @@
                 <label>月<select id="entryMonth"></select></label>
                 <label>所有者
                   <select id="entryOwner">
-                    <option>晴太</option>
-                    <option>香花</option>
+                    <option value="全員">全員</option>
+                    <option value="晴太">晴太</option>
+                    <option value="香花">香花</option>
                   </select>
                 </label>
               </div>
+
+              <label id="entryRecordOwnerWrap" style="display:none;">記録する人
+                <select id="entryRecordOwner">
+                  <option>晴太</option>
+                  <option>香花</option>
+                </select>
+                <span class="rate-flag">「全員」表示中は、この残高を誰の資産として記録するか選びます。</span>
+              </label>
 
               <label>種別
                 <select id="entryType">
@@ -455,7 +465,7 @@
                     <option>USD</option>
                   </select>
                 </label>
-                <label>金額<input id="entryAmount" type="number" inputmode="decimal" required /></label>
+                <label>金額<input id="entryAmount" type="text" inputmode="decimal" autocomplete="off" required /></label>
               </div>
 
               <label id="entryRateWrap" style="display:none;">
@@ -509,6 +519,14 @@
 
               <label>小項目名
                 <input id="accountName" placeholder="例：SBI証券 インデックス" required />
+              </label>
+
+              <label>使う人
+                <select id="accountOwners">
+                  <option value="both">2人共有</option>
+                  <option value="晴太">晴太</option>
+                  <option value="香花">香花</option>
+                </select>
               </label>
 
               <div class="form-grid">
@@ -670,6 +688,23 @@
     </div>
   </div>
 
+  <div id="confirmModal" class="modal" onclick="closeConfirmModal(event)">
+    <div class="modal-panel" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <strong>この内容で保存しますか？</strong>
+          <span>内容を確認してください</span>
+        </div>
+        <button class="close" onclick="closeConfirmModal()">×</button>
+      </div>
+      <div id="confirmBody"></div>
+      <div class="stack" style="margin-top:16px;">
+        <button class="btn-primary" type="button" onclick="commitEntry()">保存する</button>
+        <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="closeConfirmModal()">戻る（修正する）</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script>
@@ -688,15 +723,16 @@
       return `${prefix}_${Date.now().toString(36)}_${r}`;
     }
 
+    const BOTH = ["晴太","香花"];
     const presetAccounts = [
-      { id:"acc_smbc", kind:"asset", mainCategory:"銀行", name:"三井住友銀行", assetClass:"現金", currency:"JPY" },
-      { id:"acc_sbi_index", kind:"asset", mainCategory:"証券口座", name:"SBI証券 インデックス", assetClass:"株式（インデックス）", currency:"JPY" },
-      { id:"acc_sbi_stock", kind:"asset", mainCategory:"証券口座", name:"SBI証券 個別株", assetClass:"株式（個別）", currency:"JPY" },
-      { id:"acc_enbd", kind:"asset", mainCategory:"外貨口座", name:"ENBD", assetClass:"外貨", currency:"AED" },
-      { id:"acc_wise_usd", kind:"asset", mainCategory:"外貨口座", name:"Wise USD", assetClass:"外貨", currency:"USD" },
-      { id:"acc_cash", kind:"asset", mainCategory:"現金", name:"現金", assetClass:"現金", currency:"JPY" },
-      { id:"acc_smbc_card", kind:"liability", mainCategory:"クレジットカード", name:"三井住友カード未払", assetClass:"クレジットカード", currency:"JPY" },
-      { id:"acc_saison_card", kind:"liability", mainCategory:"クレジットカード", name:"セゾンカード未払", assetClass:"クレジットカード", currency:"JPY" }
+      { id:"acc_smbc", kind:"asset", mainCategory:"銀行", name:"三井住友銀行", assetClass:"現金", currency:"JPY", owners:["晴太","香花"] },
+      { id:"acc_sbi_index", kind:"asset", mainCategory:"証券口座", name:"SBI証券 インデックス", assetClass:"株式（インデックス）", currency:"JPY", owners:["晴太","香花"] },
+      { id:"acc_sbi_stock", kind:"asset", mainCategory:"証券口座", name:"SBI証券 個別株", assetClass:"株式（個別）", currency:"JPY", owners:["晴太","香花"] },
+      { id:"acc_enbd", kind:"asset", mainCategory:"外貨口座", name:"ENBD", assetClass:"外貨", currency:"AED", owners:["晴太","香花"] },
+      { id:"acc_wise_usd", kind:"asset", mainCategory:"外貨口座", name:"Wise USD", assetClass:"外貨", currency:"USD", owners:["晴太","香花"] },
+      { id:"acc_cash", kind:"asset", mainCategory:"現金", name:"現金", assetClass:"現金", currency:"JPY", owners:["晴太","香花"] },
+      { id:"acc_smbc_card", kind:"liability", mainCategory:"クレジットカード", name:"三井住友カード未払", assetClass:"クレジットカード", currency:"JPY", owners:["晴太","香花"] },
+      { id:"acc_saison_card", kind:"liability", mainCategory:"クレジットカード", name:"セゾンカード未払", assetClass:"クレジットカード", currency:"JPY", owners:["晴太","香花"] }
     ];
 
     const defaultMain = ["銀行","証券口座","クレジットカード","現金","外貨口座","ローン","その他"];
@@ -719,13 +755,16 @@
       loaded.meta = loaded.meta || { lastBackup:null };
       loaded.accounts = (loaded.accounts || []).map(a => {
         const inferredKind = a.kind || (["クレジットカード","ローン"].includes(a.assetClass || a.mainCategory) ? "liability" : "asset");
+        let owners = Array.isArray(a.owners) ? a.owners.filter(o=>o==="晴太"||o==="香花") : null;
+        if(!owners || !owners.length) owners = ["晴太","香花"]; // default: shared
         return {
           id: a.id || uid("acc"),
           kind: inferredKind,
           mainCategory: a.mainCategory || a.category || "その他",
           name: a.name || "未名称",
           assetClass: a.assetClass || a.category || "その他",
-          currency: a.currency || "JPY"
+          currency: a.currency || "JPY",
+          owners
         };
       });
       loaded.entries = (loaded.entries || []).map(e => {
@@ -780,6 +819,21 @@
       const rate = (typeof entry.rate === "number" && entry.rate > 0) ? entry.rate : (data.rates[entry.currency] || 1);
       return Number(entry.amount) * rate;
     }
+    function accountOwners(acc){ return Array.isArray(acc.owners) && acc.owners.length ? acc.owners : ["晴太","香花"]; }
+    function ownerTagLabel(owners){ const o = (owners||["晴太","香花"]); return o.length>=2 ? "共有" : o[0]; }
+
+    // format a numeric string with thousands separators, allowing up to 2 decimals
+    function formatMoneyString(raw){
+      let v = String(raw).replace(/[^\d.]/g, "");
+      const firstDot = v.indexOf(".");
+      if(firstDot >= 0){ v = v.slice(0, firstDot+1) + v.slice(firstDot+1).replace(/\./g, ""); }
+      let [intp, decp] = v.split(".");
+      intp = (intp || "").replace(/^0+(?=\d)/, "");
+      const grouped = intp ? Number(intp).toLocaleString("en-US") : (v.startsWith(".") ? "0" : "");
+      if(decp !== undefined){ decp = decp.slice(0,2); return (grouped || "0") + "." + decp; }
+      return grouped;
+    }
+    function parseMoney(str){ const n = Number(String(str).replace(/,/g, "")); return isFinite(n) ? n : NaN; }
     function accountById(id){ return data.accounts.find(a=>a.id===id) || {name:"未登録項目", kind:"asset", mainCategory:"その他", assetClass:"その他", currency:"JPY"}; }
 
     function earliestMonth(){ const y=Number(currentMonthStr().slice(0,4)); return `${y-10}-01`; }
@@ -911,15 +965,21 @@
       const entryMainCategory = document.getElementById("entryMainCategory");
       const entryAccount = document.getElementById("entryAccount");
       const selectedKind = document.getElementById("entryType").value || "asset";
+      const ownerFilter = (document.getElementById("entryOwner").value) || "全員";
+      const ownerMatch = (a)=> ownerFilter==="全員" || accountOwners(a).includes(ownerFilter);
       const oldMain = entryMainCategory.value;
       const oldAccount = entryAccount.value;
 
-      const mainCategories = data.mainCategories.filter(c => data.accounts.some(a=>a.kind===selectedKind && a.mainCategory===c));
-      entryMainCategory.innerHTML = mainCategories.length ? mainCategories.map(c=>`<option value="${c}">${c}</option>`).join("") : `<option value="">該当する大項目がありません</option>`;
+      // show "記録する人" only when filter is 全員
+      const recWrap = document.getElementById("entryRecordOwnerWrap");
+      if(recWrap) recWrap.style.display = (ownerFilter==="全員") ? "block" : "none";
+
+      const mainCategories = data.mainCategories.filter(c => data.accounts.some(a=>a.kind===selectedKind && a.mainCategory===c && ownerMatch(a)));
+      entryMainCategory.innerHTML = mainCategories.length ? mainCategories.map(c=>`<option value="${c}">${c}</option>`).join("") : `<option value="">該当する項目がありません</option>`;
       entryMainCategory.value = mainCategories.includes(oldMain) ? oldMain : (mainCategories[0]||"");
 
-      const accounts = data.accounts.filter(a=>a.kind===selectedKind && a.mainCategory===entryMainCategory.value);
-      entryAccount.innerHTML = accounts.length ? accounts.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join("") : `<option value="">小項目を登録してください</option>`;
+      const accounts = data.accounts.filter(a=>a.kind===selectedKind && a.mainCategory===entryMainCategory.value && ownerMatch(a));
+      entryAccount.innerHTML = accounts.length ? accounts.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join("") : `<option value="">使う人に合う小項目がありません</option>`;
       if(accounts.some(a=>a.id===oldAccount)) entryAccount.value = oldAccount;
       else if(accounts[0]) entryAccount.value = accounts[0].id;
 
@@ -1062,6 +1122,31 @@
     }
 
     /* ---------- list ---------- */
+    function entryRowHtml(e){
+      const acc=accountById(e.accountId);
+      return `<div class="row tap-row" onclick="openAssetModal('${e.accountId}','${e.owner}')">
+        <div><div class="row-title">${acc.name}</div>
+          <div class="row-meta">${e.owner}・${e.assetClass}<br>最終更新 ${monthLabel(e.month)}${e.memo?" / "+e.memo:""}</div></div>
+        <div class="row-amt num">${formatAmount(e.amount,e.currency)}<small>${formatJPY(toJPY(e))}</small></div>
+      </div>`;
+    }
+    function byMainCategory(entries){
+      const g={};
+      entries.slice().sort((a,b)=>{
+        if(a.mainCategory!==b.mainCategory) return a.mainCategory.localeCompare(b.mainCategory,"ja");
+        return accountById(a.accountId).name.localeCompare(accountById(b.accountId).name,"ja");
+      }).forEach(e=>{ (g[e.mainCategory]=g[e.mainCategory]||[]).push(e); });
+      return g;
+    }
+    function categoryBlocksHtml(entries){
+      const g=byMainCategory(entries);
+      return Object.keys(g).map(cat=>`
+        <div style="margin-top:8px;">
+          <div class="section-title">${cat}</div>
+          ${g[cat].map(entryRowHtml).join("")}
+        </div>`).join("");
+    }
+
     function renderList(){
       const month=selectedListMonth();
       const owner=selectedListOwner();
@@ -1071,37 +1156,37 @@
       document.getElementById("listKyokaNet").textContent=formatJPY(totalsForSnapshot(month,"香花").net);
 
       const entries=totalsForSnapshot(month,owner).entries;
-      if(!entries.length){ box.innerHTML=`<div class="empty">この時点までのデータがありません。</div>`; return; }
-      const sorted=entries.slice().sort((a,b)=>{
-        if(a.type!==b.type) return a.type==="asset"?-1:1;
-        if(a.mainCategory!==b.mainCategory) return a.mainCategory.localeCompare(b.mainCategory,"ja");
-        return accountById(a.accountId).name.localeCompare(accountById(b.accountId).name,"ja");
-      });
-      const groups={};
-      sorted.forEach(e=>{
-        const top=e.type==="asset"?"資産":"負債";
-        groups[top]=groups[top]||{};
-        groups[top][e.mainCategory]=groups[top][e.mainCategory]||[];
-        groups[top][e.mainCategory].push(e);
-      });
-      box.innerHTML=`<div class="card-title" style="margin-bottom:4px;">${monthLabel(month)}時点 ・ ${ownerLabel(owner)}</div>
-        <div class="card-sub" style="margin-bottom:6px;">指定月以前で最後に入力した残高を表示します。各行をタップで推移を表示。</div>`+
-        ["資産","負債"].filter(t=>groups[t]).map(top=>`
-          <div class="group-block">
-            <div class="group-title" style="font-size:15px;">${top}</div>
-            ${Object.keys(groups[top]).map(g=>`
-              <div style="margin-top:8px;">
-                <div class="section-title">${g}</div>
-                ${groups[top][g].map(e=>{
-                  const acc=accountById(e.accountId);
-                  return `<div class="row tap-row" onclick="openAssetModal('${e.accountId}','${e.owner}')">
-                    <div><div class="row-title">${acc.name}</div>
-                      <div class="row-meta">${e.owner}・${e.assetClass}<br>最終更新 ${monthLabel(e.month)}${e.memo?" / "+e.memo:""}</div></div>
-                    <div class="row-amt num">${formatAmount(e.amount,e.currency)}<small>${formatJPY(toJPY(e))}</small></div>
-                  </div>`;
-                }).join("")}
-              </div>`).join("")}
-          </div>`).join("");
+      const header=`<div class="card-title" style="margin-bottom:4px;">${monthLabel(month)}時点 ・ ${ownerLabel(owner)}</div>
+        <div class="card-sub" style="margin-bottom:6px;">指定月以前で最後に入力した残高を表示します。各行をタップで推移を表示。</div>`;
+      if(!entries.length){ box.innerHTML=header+`<div class="empty">この時点までのデータがありません。</div>`; return; }
+
+      const topLabel={asset:"資産", liability:"負債"};
+      let body="";
+
+      if(owner==="all"){
+        // group by owner first, then type, then category
+        ["晴太","香花"].forEach(person=>{
+          const pe=entries.filter(e=>e.owner===person);
+          if(!pe.length) return;
+          const pNet=totalsForSnapshot(month,person).net;
+          body+=`<div class="group-block" style="margin-top:16px;">
+            <div class="master-title-row"><div class="group-title" style="font-size:16px;">${person}</div>
+              <div class="num" style="font-weight:700;">${formatJPY(pNet)}</div></div>`;
+          ["asset","liability"].forEach(type=>{
+            const te=pe.filter(e=>e.type===type);
+            if(!te.length) return;
+            body+=`<div style="margin-top:6px;"><div class="group-title" style="font-size:14px; color:var(--muted);">${topLabel[type]}</div>${categoryBlocksHtml(te)}</div>`;
+          });
+          body+=`</div>`;
+        });
+      } else {
+        ["asset","liability"].forEach(type=>{
+          const te=entries.filter(e=>e.type===type);
+          if(!te.length) return;
+          body+=`<div class="group-block"><div class="group-title" style="font-size:15px;">${topLabel[type]}</div>${categoryBlocksHtml(te)}</div>`;
+        });
+      }
+      box.innerHTML=header+body;
     }
 
     /* ---------- masters ---------- */
@@ -1119,9 +1204,15 @@
           </div>
           ${accounts.length?accounts.map(a=>{
             const usedCount=data.entries.filter(e=>e.accountId===a.id).length;
+            const ow=accountOwners(a); const owVal=ow.length>=2?"both":ow[0];
             return `<div class="row reorder-row" data-reorder-kind="account" data-reorder-value="${a.id}" data-reorder-parent="${group}">
               <div><div class="row-title"><span class="kind-badge ${a.kind==="liability"?"liability":""}">${a.kind==="asset"?"資産":"負債"}</span>${a.name}</div>
-                <div class="row-meta">${a.assetClass} / ${a.currency}${masterEditMode?`<br>月次データ ${usedCount}件`:""}</div></div>
+                <div class="row-meta">${a.assetClass} / ${a.currency} / 使う人：${ownerTagLabel(ow)}${masterEditMode?`<br>月次データ ${usedCount}件`:""}</div>
+                ${masterEditMode?`<select onchange="setAccountOwners('${a.id}', this.value)" style="margin-top:8px; font-size:13px; padding:8px 10px;">
+                    <option value="both" ${owVal==="both"?"selected":""}>2人共有</option>
+                    <option value="晴太" ${owVal==="晴太"?"selected":""}>晴太</option>
+                    <option value="香花" ${owVal==="香花"?"selected":""}>香花</option>
+                  </select>`:""}</div>
               ${masterEditMode?`<div class="row-actions"><button class="danger tiny-btn" onclick="deleteAccount('${a.id}')">削除</button><span class="edit-handle" onpointerdown="startReorder(event,'account','${a.id}','${group}')">⠿</span></div>`:""}
             </div>`;
           }).join(""):`<div class="row"><div class="row-meta">この大項目にはまだ小項目がありません。</div></div>`}
@@ -1176,51 +1267,96 @@
     }
 
     document.getElementById("entryType").addEventListener("change", fillSelects);
+    document.getElementById("entryOwner").addEventListener("change", fillSelects);
     document.getElementById("entryMainCategory").addEventListener("change", ()=>{
       const main=document.getElementById("entryMainCategory").value;
       const kind=document.getElementById("entryType").value||"asset";
-      const list=data.accounts.filter(a=>a.kind===kind && a.mainCategory===main);
-      document.getElementById("entryAccount").innerHTML=list.length?list.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join(""):`<option value="">小項目を登録してください</option>`;
+      const ownerFilter=(document.getElementById("entryOwner").value)||"全員";
+      const list=data.accounts.filter(a=>a.kind===kind && a.mainCategory===main && (ownerFilter==="全員"||accountOwners(a).includes(ownerFilter)));
+      document.getElementById("entryAccount").innerHTML=list.length?list.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join(""):`<option value="">使う人に合う小項目がありません</option>`;
       applyAccountDefaults();
     });
     document.getElementById("entryAccount").addEventListener("change", applyAccountDefaults);
     document.getElementById("entryCurrency").addEventListener("change", ()=>{ document.getElementById("entryRate").value=""; updateRateField(); });
 
+    // live comma formatting for the amount field (up to 2 decimals)
+    document.getElementById("entryAmount").addEventListener("input", (e)=>{
+      e.target.value = formatMoneyString(e.target.value);
+    });
+
+    let pendingEntry = null;
     document.getElementById("entryForm").addEventListener("submit",(e)=>{
       e.preventDefault();
       const selectedAccountId=document.getElementById("entryAccount").value;
-      if(!selectedAccountId){ toast("先に登録画面で小項目を登録してください。"); return; }
+      if(!selectedAccountId){ toast("使う人に合う小項目がありません。登録画面で追加してください。"); return; }
       const acc=accountById(selectedAccountId);
+      const amount=parseMoney(document.getElementById("entryAmount").value);
+      if(isNaN(amount)){ toast("金額を正しく入力してください。"); return; }
       const currency=document.getElementById("entryCurrency").value;
       let rate=1;
       if(currency!=="JPY"){
         rate=Number(document.getElementById("entryRate").value);
         if(!rate || rate<=0) rate=data.rates[currency]||1;
       }
-      const entry={
+      const ownerFilter=document.getElementById("entryOwner").value;
+      const owner = (ownerFilter==="全員") ? document.getElementById("entryRecordOwner").value : ownerFilter;
+      pendingEntry={
         id:uid("e"),
         month:document.getElementById("entryMonth").value,
-        owner:document.getElementById("entryOwner").value,
+        owner,
         accountId:acc.id,
         mainCategory:acc.mainCategory,
         assetClass:document.getElementById("entryAssetClass").value,
         type:acc.kind||document.getElementById("entryType").value,
         currency,
         rate,
-        amount:Number(document.getElementById("entryAmount").value),
+        amount,
         memo:document.getElementById("entryMemo").value
       };
+      openConfirmModal(pendingEntry, acc);
+    });
+
+    function openConfirmModal(entry, acc){
+      const exists = data.entries.some(x=>x.month===entry.month && x.owner===entry.owner && x.accountId===entry.accountId);
+      const rows=[
+        ["月", monthLabel(entry.month)],
+        ["記録する人", entry.owner],
+        ["種別", entry.type==="asset"?"資産":"負債"],
+        ["項目", `${entry.mainCategory} / ${acc.name}`],
+        ["資産・負債種類", entry.assetClass],
+        ["金額", formatAmount(entry.amount, entry.currency)]
+      ];
+      if(entry.currency!=="JPY"){
+        rows.push(["換算レート", `1 ${entry.currency} = ¥${entry.rate}`]);
+        rows.push(["円換算", formatJPY(entry.amount*entry.rate)]);
+      }
+      if(entry.memo) rows.push(["メモ", entry.memo]);
+      document.getElementById("confirmBody").innerHTML =
+        (exists?`<div class="note-box" style="margin-bottom:12px;">同じ月・人・項目の残高が既にあります。保存すると<strong style="color:var(--ink)">上書き</strong>されます。</div>`:"")+
+        rows.map(([k,v])=>`<div class="meta-row"><span>${k}</span><strong class="num" style="text-align:right; max-width:60%;">${v}</strong></div>`).join("");
+      document.getElementById("confirmModal").classList.add("active");
+      document.body.style.overflow="hidden";
+    }
+    function closeConfirmModal(event){
+      if(event && event.target.id!=="confirmModal") return;
+      document.getElementById("confirmModal").classList.remove("active");
+      document.body.style.overflow="";
+    }
+    function commitEntry(){
+      if(!pendingEntry) return;
+      const entry=pendingEntry;
       const idx=data.entries.findIndex(x=>x.month===entry.month && x.owner===entry.owner && x.accountId===entry.accountId);
       if(idx>=0) data.entries[idx]={ ...data.entries[idx], ...entry, id:data.entries[idx].id };
       else data.entries.push(entry);
-
+      pendingEntry=null;
       document.getElementById("entryAmount").value="";
       document.getElementById("entryMemo").value="";
       activeDashboardMonth=entry.month; activeListMonth=entry.month;
+      closeConfirmModal();
       save();
       showTab("list");
       toast("保存しました");
-    });
+    }
 
     document.getElementById("accountForm").addEventListener("submit",(e)=>{
       e.preventDefault();
@@ -1233,11 +1369,13 @@
       if(data.accounts.some(a=>a.name===name && a.mainCategory===mainCategory && a.kind===kind)){ toast("同じ種別・大項目に同名の小項目があります。"); return; }
       data.mainCategories=[...new Set([...(data.mainCategories||[]), mainCategory])];
       data.assetClasses=[...new Set([...(data.assetClasses||[]), assetClass])];
-      const reg={ id:uid("acc"), kind, mainCategory, name, assetClass, currency:document.getElementById("accountCurrency").value };
+      const ownerSel=document.getElementById("accountOwners").value;
+      const owners = ownerSel==="both" ? ["晴太","香花"] : [ownerSel];
+      const reg={ id:uid("acc"), kind, mainCategory, name, assetClass, currency:document.getElementById("accountCurrency").value, owners };
       data.accounts.push(reg);
       const success=document.getElementById("registrationSuccess");
       success.style.display="block";
-      success.innerHTML=`<strong style="color:var(--ink)">登録しました</strong><br>${reg.kind==="asset"?"資産":"負債"}／${reg.mainCategory}／${reg.name}（${reg.assetClass}・${reg.currency}）`;
+      success.innerHTML=`<strong style="color:var(--ink)">登録しました</strong><br>${reg.kind==="asset"?"資産":"負債"}／${reg.mainCategory}／${reg.name}（${reg.assetClass}・${reg.currency}・${ownerTagLabel(owners)}）`;
       e.target.reset();
       save();
     });
@@ -1297,6 +1435,12 @@
       if(!confirm(msg)) return;
       data.accounts=data.accounts.filter(a=>a.id!==id);
       data.entries=data.entries.filter(e=>e.accountId!==id);
+      save();
+    }
+    function setAccountOwners(id, value){
+      const acc=data.accounts.find(a=>a.id===id);
+      if(!acc) return;
+      acc.owners = value==="both" ? ["晴太","香花"] : [value];
       save();
     }
     function deleteMainCategory(category){
@@ -1473,7 +1617,7 @@
     }
     function openModal(){ document.getElementById("chartModal").classList.add("active"); document.body.style.overflow="hidden"; }
     function closeChartModal(event){ if(event&&event.target.id!=="chartModal") return; document.getElementById("chartModal").classList.remove("active"); document.body.style.overflow=""; }
-    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeChartModal(); });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeChartModal(); closeConfirmModal(); } });
 
     /* ---------- toast ---------- */
     let toastTimer=null;
