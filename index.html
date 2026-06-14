@@ -190,9 +190,10 @@
     }
     .owner-card span{ font-size:12.5px; color:var(--muted); font-weight:600; }
     .owner-card strong{ display:block; font-size:clamp(14px, 4.6vw, 18px); font-weight:700; margin-top:5px; letter-spacing:-.01em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .list-summary{ display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
-    .list-summary .owner-card{ padding:12px; min-width:0; }
-    .list-summary strong{ font-size:clamp(11px, 3.3vw, 15px); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .list-summary{ display:flex; flex-direction:column; gap:10px; }
+    .list-summary .owner-card{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:13px 16px; min-width:0; }
+    .list-summary .owner-card span{ font-size:13.5px; font-weight:600; }
+    .list-summary strong{ display:block; font-size:18px; font-weight:700; margin-top:0; white-space:nowrap; letter-spacing:-.01em; }
 
     /* breakdown / pie */
     .mini-grid{ display:grid; grid-template-columns:1fr; gap:14px; }
@@ -1124,10 +1125,13 @@
     /* ---------- list ---------- */
     function entryRowHtml(e){
       const acc=accountById(e.accountId);
+      const amt = e.currency==="JPY"
+        ? formatAmount(e.amount,e.currency)
+        : `${formatAmount(e.amount,e.currency)}<small>${formatJPY(toJPY(e))}</small>`;
       return `<div class="row tap-row" onclick="openAssetModal('${e.accountId}','${e.owner}')">
         <div><div class="row-title">${acc.name}</div>
           <div class="row-meta">${e.owner}・${e.assetClass}<br>最終更新 ${monthLabel(e.month)}${e.memo?" / "+e.memo:""}</div></div>
-        <div class="row-amt num">${formatAmount(e.amount,e.currency)}<small>${formatJPY(toJPY(e))}</small></div>
+        <div class="row-amt num">${amt}</div>
       </div>`;
     }
     function byMainCategory(entries){
@@ -1585,7 +1589,7 @@
       document.getElementById("modalTitle").textContent=acc.name;
       document.getElementById("modalSubtitle").textContent=`${owner} ・ ${monthLabel(month)}時点 ・ 単体推移`;
       const lv=latest?toJPY(latest):0;
-      const lt=latest?`${formatAmount(latest.amount,latest.currency)} ／ ${formatJPY(lv)}`:"データなし";
+      const lt=latest?(latest.currency==="JPY"?formatJPY(lv):`${formatAmount(latest.amount,latest.currency)} ／ ${formatJPY(lv)}`):"データなし";
       const tabs=[["3m","3ヶ月"],["6m","6ヶ月"],["1y","1年"],["3y","3年"],["5y","5年"],["all","全期間"]];
       document.getElementById("modalBody").innerHTML=`
         <div class="card" style="border-color:var(--line);">
