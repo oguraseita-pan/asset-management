@@ -57,8 +57,9 @@
     .title{ font-size:22px; font-weight:700; letter-spacing:-.02em; }
     .brand-chip{
       font-size:11px; font-weight:600; color:var(--muted);
-      border:1px solid var(--line-strong); border-radius:999px; padding:6px 13px;
-      background:var(--panel); display:inline-flex; align-items:center; gap:5px; cursor:pointer;
+      border:1px solid var(--line-strong); border-radius:999px; padding:6px 14px;
+      background:var(--panel); display:inline-flex; align-items:center; justify-content:center; cursor:pointer;
+      line-height:1; text-align:center;
     }
     .brand-chip svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
     .brand-chip:active{ opacity:.7; }
@@ -297,7 +298,7 @@
       <div class="app-brand">
         <div class="title">Ogura Family Finance</div>
         <button id="privateBadge" class="brand-chip" onclick="togglePrivacy()" aria-label="数値の表示・非表示を切り替え">
-          <span id="privateIcon"></span><span id="privateText">Private</span>
+          <span id="privateText">Private</span>
         </button>
       </div>
     </header>
@@ -439,7 +440,12 @@
 
             <form id="entryForm" class="stack">
               <div class="form-grid">
-                <label>月<select id="entryMonth"></select></label>
+                <label>月
+                  <div class="month-picker-wrap">
+                    <button type="button" id="entryMonthButton" class="month-picker-btn" onclick="toggleMonthPicker('entryMonth')">月を選択</button>
+                    <div id="entryMonthPanel" class="month-picker-panel" onclick="event.stopPropagation()"></div>
+                  </div>
+                </label>
                 <label>所有者
                   <select id="entryOwner">
                     <option value="全員">全員</option>
@@ -526,7 +532,12 @@
             </div>
 
             <div class="form-grid">
-              <label>月<select id="bulkMonth"></select></label>
+              <label>月
+                <div class="month-picker-wrap">
+                  <button type="button" id="bulkMonthButton" class="month-picker-btn" onclick="toggleMonthPicker('bulkMonth')">月を選択</button>
+                  <div id="bulkMonthPanel" class="month-picker-panel" onclick="event.stopPropagation()"></div>
+                </div>
+              </label>
               <label>対象
                 <select id="bulkOwner">
                   <option value="晴太">晴太</option>
@@ -937,8 +948,24 @@
       return opts;
     }
 
+    let activeEntryMonth = null;
+    let activeBulkMonth = null;
+    function getActiveMonth(targetId){
+      if(targetId==="filterMonth") return activeDashboardMonth || latestSelectableMonth();
+      if(targetId==="listMonth") return activeListMonth || latestSelectableMonth();
+      if(targetId==="entryMonth") return activeEntryMonth || latestSelectableMonth();
+      if(targetId==="bulkMonth") return activeBulkMonth || latestSelectableMonth();
+      return latestSelectableMonth();
+    }
+    function setActiveMonth(targetId, v){
+      if(targetId==="filterMonth") activeDashboardMonth=v;
+      else if(targetId==="listMonth") activeListMonth=v;
+      else if(targetId==="entryMonth") activeEntryMonth=v;
+      else if(targetId==="bulkMonth") activeBulkMonth=v;
+    }
+
     function renderMonthPicker(targetId){
-      const activeMonth = targetId === "filterMonth" ? selectedDashboardMonth() : selectedListMonth();
+      const activeMonth = getActiveMonth(targetId);
       const button = document.getElementById(`${targetId}Button`);
       const panel = document.getElementById(`${targetId}Panel`);
       if(!button || !panel) return;
@@ -952,9 +979,9 @@
     }
     function toggleMonthPicker(targetId){
       const panel = document.getElementById(`${targetId}Panel`);
-      const otherPanel = document.getElementById(targetId === "filterMonth" ? "listMonthPanel" : "filterMonthPanel");
-      if(otherPanel) otherPanel.classList.remove("active");
-      panel.classList.toggle("active");
+      const isOpen = panel.classList.contains("active");
+      closeMonthPickers();
+      if(!isOpen) panel.classList.add("active");
     }
     function keepMonthPickerOpen(targetId){ const p=document.getElementById(`${targetId}Panel`); if(p) p.classList.add("active"); }
     function closeMonthPickers(){ document.querySelectorAll(".month-picker-panel").forEach(p=>p.classList.remove("active")); }
@@ -963,8 +990,8 @@
       if(value === "__years__"){ monthDisplayMode="years"; render(); setTimeout(()=>keepMonthPickerOpen(targetId),0); return; }
       if(value.startsWith("__year__")){ monthDisplayMode="year"; selectedYearForMonthList=Number(value.replace("__year__","")); render(); setTimeout(()=>keepMonthPickerOpen(targetId),0); return; }
       if(value === "__recent__"){ monthDisplayMode="recent"; selectedYearForMonthList=null; render(); setTimeout(()=>keepMonthPickerOpen(targetId),0); return; }
-      if(targetId === "filterMonth"){ activeDashboardMonth=value; document.getElementById("filterMonth").value=value; }
-      if(targetId === "listMonth"){ activeListMonth=value; document.getElementById("listMonth").value=value; }
+      setActiveMonth(targetId, value);
+      monthDisplayMode="recent"; selectedYearForMonthList=null;
       render(); closeMonthPickers();
     }
     document.addEventListener("click",(e)=>{ if(!e.target.closest(".month-picker-wrap")) closeMonthPickers(); });
@@ -973,6 +1000,8 @@
     function selectedDashboardOwner(){ return document.getElementById("filterOwner").value || "all"; }
     function selectedListMonth(){ return activeListMonth || latestSelectableMonth(); }
     function selectedListOwner(){ return document.getElementById("listOwner").value || "all"; }
+    function selectedEntryMonth(){ return activeEntryMonth || latestSelectableMonth(); }
+    function selectedBulkMonth(){ return activeBulkMonth || latestSelectableMonth(); }
     function ownerLabel(o){ return o==="all" ? "2人の合計" : o; }
 
     function snapshotEntriesUpTo(month, owner="all"){
@@ -1011,21 +1040,14 @@
 
     function fillSelects(){
       refreshMasterSelectOptions();
-      const allMonths = selectableMonths();
       const latest = latestSelectableMonth();
-      const allMonthOptions = allMonths.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join("");
 
       if(!activeDashboardMonth) activeDashboardMonth = latest;
       if(!activeListMonth) activeListMonth = latest;
-
-      const entryMonth = document.getElementById("entryMonth");
-      const oldEntry = entryMonth.value || latest;
-      document.getElementById("filterMonth").value = activeDashboardMonth;
-      document.getElementById("listMonth").value = activeListMonth;
-      entryMonth.innerHTML = allMonthOptions;
-      entryMonth.value = allMonths.includes(oldEntry) ? oldEntry : latest;
+      if(!activeEntryMonth) activeEntryMonth = latest;
 
       renderMonthPicker("filterMonth");
+      renderMonthPicker("entryMonth");
       renderMonthPicker("listMonth");
 
       // populate "資産・負債種類" from registered list (fixes new types not appearing)
@@ -1338,8 +1360,8 @@
       document.querySelector(`.tab[data-tab="${id}"]`).classList.add("active");
       const badge=document.getElementById("privateBadge");
       if(badge) badge.style.display = (id==="dashboard") ? "inline-flex" : "none";
-      if(id==="input") document.getElementById("entryMonth").value=latestSelectableMonth();
-      if(id==="bulk"){ const bm=document.getElementById("bulkMonth"); if(bm && !bm.value) bm.value=latestSelectableMonth(); }
+      if(id==="input"){ if(!activeEntryMonth) activeEntryMonth=latestSelectableMonth(); renderMonthPicker("entryMonth"); }
+      if(id==="bulk"){ if(!activeBulkMonth) activeBulkMonth=latestSelectableMonth(); }
       window.scrollTo({top:0, behavior:"smooth"});
       render();
     }
@@ -1400,7 +1422,7 @@
       const owner = (ownerFilter==="全員") ? document.getElementById("entryRecordOwner").value : ownerFilter;
       pendingEntry={
         id:uid("e"),
-        month:document.getElementById("entryMonth").value,
+        month:selectedEntryMonth(),
         owner,
         accountId:acc.id,
         mainCategory:acc.mainCategory,
@@ -1917,19 +1939,16 @@
       return target==="共通" ? document.getElementById("bulkRecordOwner").value : target;
     }
     function renderBulk(){
-      const monthSel=document.getElementById("bulkMonth");
-      if(!monthSel) return;
+      if(!document.getElementById("bulkMonthButton")) return;
       const ru=document.getElementById("bulkRateUSD"); if(ru) ru.value=data.rates.USD;
       const ra=document.getElementById("bulkRateAED"); if(ra) ra.value=data.rates.AED;
-      const allMonths=selectableMonths();
-      const cur=monthSel.value || latestSelectableMonth();
-      monthSel.innerHTML=allMonths.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join("");
-      monthSel.value=allMonths.includes(cur)?cur:latestSelectableMonth();
+      if(!activeBulkMonth) activeBulkMonth=latestSelectableMonth();
+      renderMonthPicker("bulkMonth");
 
       const target=document.getElementById("bulkOwner").value;
       document.getElementById("bulkRecordOwnerWrap").style.display = target==="共通" ? "block" : "none";
       const recOwner=bulkRecordOwner();
-      const month=monthSel.value;
+      const month=selectedBulkMonth();
       const box=document.getElementById("bulkList");
       const accounts=bulkAccountsFor(target);
       if(!accounts.length){ box.innerHTML=`<div class="empty">「${target}」に設定された項目がありません。設定の「項目の登録」で使う人を設定してください。</div>`; return; }
@@ -1976,14 +1995,13 @@
       const v=Number(document.getElementById("bulkRateUSD").value);
       if(v>0){ data.rates.USD=v; data.rates.AED=Number((v/AED_PER_USD).toFixed(2)); save(); showRateSaved(); }
     }
-    document.getElementById("bulkMonth").addEventListener("change", renderBulk);
     document.getElementById("bulkOwner").addEventListener("change", renderBulk);
     document.getElementById("bulkRecordOwner").addEventListener("change", renderBulk);
 
     function collectBulk(){
       const target=document.getElementById("bulkOwner").value;
       const recOwner=bulkRecordOwner();
-      const month=document.getElementById("bulkMonth").value;
+      const month=selectedBulkMonth();
       const accounts=bulkAccountsFor(target);
       const items=[];
       accounts.forEach(a=>{
