@@ -32,6 +32,8 @@
       --radius-sm:13px;
       --safe-bottom:env(safe-area-inset-bottom);
       --safe-top:env(safe-area-inset-top);
+      --safe-left:env(safe-area-inset-left);
+      --safe-right:env(safe-area-inset-right);
       --tabbar:74px;
     }
 
@@ -44,6 +46,8 @@
       -webkit-tap-highlight-color:transparent;
       -webkit-font-smoothing:antialiased;
       padding-bottom:calc(var(--tabbar) + var(--safe-bottom) + 18px);
+      padding-left:var(--safe-left);
+      padding-right:var(--safe-right);
       line-height:1.5;
     }
     .num{ font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1; }
@@ -51,7 +55,7 @@
     .app{ max-width:520px; margin:0 auto; }
 
     header{
-      padding:calc(16px + var(--safe-top)) 20px 6px;
+      padding:calc(14px + var(--safe-top)) 20px 6px;
     }
     .app-brand{ display:flex; align-items:center; justify-content:space-between; }
     .title{ font-size:22px; font-weight:700; letter-spacing:-.02em; }
@@ -261,6 +265,7 @@
       -webkit-backdrop-filter:saturate(180%) blur(12px);
       border-top:1px solid var(--line);
       padding-bottom:var(--safe-bottom);
+      padding-left:var(--safe-left); padding-right:var(--safe-right);
     }
     .tabs-inner{ max-width:520px; margin:0 auto; display:flex; }
     .tab{
@@ -274,7 +279,7 @@
     /* modal */
     .modal{ display:none; position:fixed; inset:0; z-index:80; background:rgba(20,28,48,.42); align-items:flex-end; justify-content:center; padding:0; }
     .modal.active{ display:flex; }
-    .modal.center{ align-items:center; padding:18px; }
+    .modal.center{ align-items:center; padding:18px; padding-left:calc(18px + var(--safe-left)); padding-right:calc(18px + var(--safe-right)); }
     .modal.center .modal-panel{ border-radius:20px; max-height:86vh; }
     .modal-panel{
       background:var(--panel); width:100%; max-width:520px; border-radius:22px 22px 0 0;
@@ -1283,8 +1288,7 @@
       document.getElementById("listKyokaNet").textContent=formatJPY(totalsForSnapshot(month,"香花").net);
 
       const entries=totalsForSnapshot(month,owner).entries;
-      const header=`<div class="card-title" style="margin-bottom:4px;">${monthLabel(month)}時点 ・ ${ownerLabel(owner)}</div>
-        <div class="card-sub" style="margin-bottom:6px;">指定月以前で最後に入力した残高を表示します。各行をタップで推移を表示。</div>`;
+      const header=`<div class="card-title" style="margin-bottom:6px;">${monthLabel(month)}時点 ・ ${ownerLabel(owner)}</div>`;
       if(!entries.length){ box.innerHTML=header+`<div class="empty">この時点までのデータがありません。</div>`; return; }
 
       const topLabel={asset:"資産", liability:"負債"};
@@ -2082,8 +2086,7 @@
         </div>`;
       }
 
-      box.innerHTML=`<div class="card-title" style="margin-bottom:2px;">${monthLabel(month)} ・ ${target}${target==="共通"?`（記録：${recOwner}）`:""}</div>
-        <div class="card-sub" style="margin-bottom:6px;">空欄のままの項目は保存されません（前回の残高が引き継がれます）。</div>
+      box.innerHTML=`<div class="card-title" style="margin-bottom:6px;">${monthLabel(month)} ・ ${target}${target==="共通"?`（記録：${recOwner}）`:""}</div>
         ${block("資産", assets)}${block("負債", liabs)}
         <button class="btn-primary" type="button" style="margin-top:16px;" onclick="confirmBulk()">この内容で一括保存</button>`;
 
