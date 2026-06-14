@@ -172,6 +172,16 @@
     .chart-box{ margin-top:14px; }
     .area-wrap{ width:100%; height:170px; }
     .area-wrap.small{ height:150px; }
+    .modal-chart{ height:clamp(150px,34vh,300px); }
+    .modal-chart-lg{ height:clamp(160px,40vh,340px); }
+    @media (orientation:landscape) and (max-height:540px){
+      .modal.center{ padding:10px; }
+      .modal.center .modal-panel{ max-height:96vh; padding-top:12px; }
+      .modal-chart, .modal-chart-lg{ height:clamp(110px,42vh,220px); }
+      .range-tabs{ gap:4px; }
+      .range-tab{ padding:6px 9px; font-size:12px; }
+      .donut-stage, .donut{ width:150px; height:150px; }
+    }
     .tap-card{ cursor:pointer; }
     .range-tabs{ display:flex; gap:5px; margin-top:10px; }
     .range-tab{
@@ -250,6 +260,9 @@
     .edit-handle{ font-size:20px; color:var(--muted); padding:8px 12px; cursor:grab; touch-action:none; border-radius:8px; background:var(--bg); }
     .edit-handle:active{ cursor:grabbing; background:var(--primary-soft); color:var(--primary); }
     .reorder-lift{ position:relative; z-index:6; transform:scale(1.03); box-shadow:0 12px 28px rgba(20,30,60,.20); background:var(--panel); border-radius:12px; transition:transform .08s; }
+    .edit-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:9px; }
+    .arch-badge{ font-size:10px; font-weight:700; color:var(--muted); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:2px 7px; margin-left:8px; }
+    .archived-row{ opacity:.62; }
 
     .empty{ text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0; }
     .group-block{ margin-top:14px; }
@@ -790,6 +803,23 @@
     </div>
   </div>
 
+  <div id="editAccountModal" class="modal" onclick="closeEditAccount(event)">
+    <div class="modal-panel" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <strong>項目を編集</strong>
+          <span>過去のデータは保持されます</span>
+        </div>
+        <button class="close" onclick="closeEditAccount()">×</button>
+      </div>
+      <div id="editAccountBody" class="stack"></div>
+      <div class="stack" style="margin-top:16px;">
+        <button class="btn-primary" type="button" onclick="saveEditAccount()">保存する</button>
+        <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="closeEditAccount()">戻る</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="toast"></div>
 
   <script>
@@ -849,7 +879,8 @@
           name: a.name || "未名称",
           assetClass: a.assetClass || a.category || "その他",
           currency: a.currency || "JPY",
-          owners
+          owners,
+          archived: !!a.archived
         };
       });
       loaded.entries = (loaded.entries || []).map(e => {
@@ -1071,7 +1102,7 @@
       const entryAccount = document.getElementById("entryAccount");
       const selectedKind = document.getElementById("entryType").value || "asset";
       const ownerFilter = (document.getElementById("entryOwner").value) || "全員";
-      const ownerMatch = (a)=> ownerFilter==="全員" || accountOwners(a).includes(ownerFilter);
+      const ownerMatch = (a)=> !a.archived && (ownerFilter==="全員" || accountOwners(a).includes(ownerFilter));
       const oldMain = entryMainCategory.value;
       const oldAccount = entryAccount.value;
 
@@ -1342,16 +1373,16 @@
           </div>
           ${accounts.length?accounts.map(a=>{
             const usedCount=data.entries.filter(e=>e.accountId===a.id).length;
-            const ow=accountOwners(a); const owVal=ow.length>=2?"both":ow[0];
-            return `<div class="row reorder-row" data-reorder-kind="account" data-reorder-value="${a.id}" data-reorder-parent="${group}">
-              <div><div class="row-title"><span class="kind-badge ${a.kind==="liability"?"liability":""}">${a.kind==="asset"?"資産":"負債"}</span>${a.name}</div>
+            const ow=accountOwners(a);
+            return `<div class="row reorder-row${a.archived?" archived-row":""}" data-reorder-kind="account" data-reorder-value="${a.id}" data-reorder-parent="${group}">
+              <div><div class="row-title"><span class="kind-badge ${a.kind==="liability"?"liability":""}">${a.kind==="asset"?"資産":"負債"}</span>${a.name}${a.archived?`<span class="arch-badge">アーカイブ</span>`:""}</div>
                 <div class="row-meta">${a.assetClass} / ${a.currency} / 使う人：${ownerTagLabel(ow)}${masterEditMode?`<br>月次データ ${usedCount}件`:""}</div>
-                ${masterEditMode?`<select onchange="setAccountOwners('${a.id}', this.value)" style="margin-top:8px; font-size:13px; padding:8px 10px;">
-                    <option value="both" ${owVal==="both"?"selected":""}>2人共通</option>
-                    <option value="晴太" ${owVal==="晴太"?"selected":""}>晴太</option>
-                    <option value="香花" ${owVal==="香花"?"selected":""}>香花</option>
-                  </select>`:""}</div>
-              ${masterEditMode?`<div class="row-actions"><button class="danger tiny-btn" onclick="deleteAccount('${a.id}')">削除</button><span class="edit-handle" onpointerdown="startReorder(event,'account','${a.id}','${group}')">⠿</span></div>`:""}
+                ${masterEditMode?`<div class="edit-actions">
+                    <button class="tiny-btn soft" onclick="openEditAccount('${a.id}')">編集</button>
+                    <button class="tiny-btn" onclick="toggleArchiveAccount('${a.id}')">${a.archived?"戻す":"アーカイブ"}</button>
+                    <button class="danger tiny-btn" onclick="deleteAccount('${a.id}')">削除</button>
+                  </div>`:""}</div>
+              ${masterEditMode?`<span class="edit-handle" onpointerdown="startReorder(event,'account','${a.id}','${group}')">⠿</span>`:""}
             </div>`;
           }).join(""):`<div class="row"><div class="row-meta">この大項目にはまだ小項目がありません。</div></div>`}
         </div>`;
@@ -1429,7 +1460,7 @@
       const main=document.getElementById("entryMainCategory").value;
       const kind=document.getElementById("entryType").value||"asset";
       const ownerFilter=(document.getElementById("entryOwner").value)||"全員";
-      const list=data.accounts.filter(a=>a.kind===kind && a.mainCategory===main && (ownerFilter==="全員"||accountOwners(a).includes(ownerFilter)));
+      const list=data.accounts.filter(a=>!a.archived && a.kind===kind && a.mainCategory===main && (ownerFilter==="全員"||accountOwners(a).includes(ownerFilter)));
       document.getElementById("entryAccount").innerHTML=list.length?list.map(a=>`<option value="${a.id}">${a.name}（${a.assetClass}・${a.currency}）</option>`).join(""):`<option value="">使う人に合う小項目がありません</option>`;
       applyAccountDefaults();
     });
@@ -1636,6 +1667,85 @@
       acc.owners = value==="both" ? ["晴太","香花"] : [value];
       save();
     }
+    function toggleArchiveAccount(id){
+      const acc=accountById(id);
+      if(!acc) return;
+      acc.archived=!acc.archived;
+      save();
+      toast(acc.archived?`「${acc.name}」をアーカイブしました`:`「${acc.name}」を戻しました`);
+    }
+
+    /* ---------- edit account (keeps same id so past data stays linked) ---------- */
+    let editingAccountId=null;
+    function openEditAccount(id){
+      const acc=accountById(id);
+      if(!acc) return;
+      editingAccountId=id;
+      const used=data.entries.filter(e=>e.accountId===id).length;
+      const ow=accountOwners(acc); const owVal=ow.length>=2?"both":ow[0];
+      const mainOptions=data.mainCategories.map(c=>`<option value="${c}" ${c===acc.mainCategory?"selected":""}>${c}</option>`).join("");
+      const classOptions=data.assetClasses.map(c=>`<option value="${c}" ${c===acc.assetClass?"selected":""}>${c}</option>`).join("");
+      document.getElementById("editAccountBody").innerHTML=`
+        <label>種別
+          <select id="editAccKind">
+            <option value="asset" ${acc.kind==="asset"?"selected":""}>資産</option>
+            <option value="liability" ${acc.kind==="liability"?"selected":""}>負債</option>
+          </select>
+        </label>
+        <label>大項目<select id="editAccMain">${mainOptions}</select></label>
+        <label>大項目を新しく追加する場合<input id="editAccMainCustom" placeholder="未入力なら上の選択を使用" /></label>
+        <label>小項目名<input id="editAccName" value="${acc.name.replace(/"/g,"&quot;")}" /></label>
+        <label>使う人
+          <select id="editAccOwners">
+            <option value="both" ${owVal==="both"?"selected":""}>2人共通</option>
+            <option value="晴太" ${owVal==="晴太"?"selected":""}>晴太</option>
+            <option value="香花" ${owVal==="香花"?"selected":""}>香花</option>
+          </select>
+        </label>
+        <div class="form-grid">
+          <label>資産・負債種類<select id="editAccClass">${classOptions}</select></label>
+          <label>通貨
+            <select id="editAccCurrency">
+              <option ${acc.currency==="JPY"?"selected":""}>JPY</option>
+              <option ${acc.currency==="AED"?"selected":""}>AED</option>
+              <option ${acc.currency==="USD"?"selected":""}>USD</option>
+            </select>
+          </label>
+        </div>
+        <label>資産・負債種類を新しく追加する場合<input id="editAccClassCustom" placeholder="未入力なら上の選択を使用" /></label>
+        <div class="note-box" style="margin-top:6px;">名前・大項目・種類・使う人を変えても、過去に入力した${used}件の金額データはこの項目に紐づいたまま保持されます。${acc.currency!=="JPY"?"<br>通貨を変更しても、過去に入力済みの金額・レートはそのまま（変換されません）。":""}</div>
+      `;
+      document.getElementById("editAccountModal").classList.add("active");
+      document.body.style.overflow="hidden";
+    }
+    function closeEditAccount(event){
+      if(event && event.target.id!=="editAccountModal") return;
+      document.getElementById("editAccountModal").classList.remove("active");
+      document.body.style.overflow="";
+      editingAccountId=null;
+    }
+    function saveEditAccount(){
+      const acc=accountById(editingAccountId);
+      if(!acc) return;
+      const kind=document.getElementById("editAccKind").value;
+      let mainCategory=(document.getElementById("editAccMainCustom").value||"").trim() || document.getElementById("editAccMain").value;
+      const name=(document.getElementById("editAccName").value||"").trim();
+      if(!name){ toast("小項目名を入力してください。"); return; }
+      const ownerSel=document.getElementById("editAccOwners").value;
+      const owners=ownerSel==="both"?["晴太","香花"]:[ownerSel];
+      let assetClass=(document.getElementById("editAccClassCustom").value||"").trim() || document.getElementById("editAccClass").value;
+      const currency=document.getElementById("editAccCurrency").value;
+      // register any new category/class
+      if(!data.mainCategories.includes(mainCategory)) data.mainCategories.push(mainCategory);
+      if(!data.assetClasses.includes(assetClass)) data.assetClasses.push(assetClass);
+      // update account (same id -> entries stay linked)
+      acc.kind=kind; acc.mainCategory=mainCategory; acc.name=name; acc.owners=owners; acc.assetClass=assetClass; acc.currency=currency;
+      // propagate organizational labels to existing entries (NOT currency/amount/rate)
+      data.entries.forEach(e=>{ if(e.accountId===acc.id){ e.mainCategory=mainCategory; e.assetClass=assetClass; e.type=kind; } });
+      closeEditAccount();
+      save();
+      toast("項目を更新しました");
+    }
     function deleteMainCategory(category){
       if(data.accounts.some(a=>a.mainCategory===category)){ toast("小項目があるため削除できません。"); return; }
       if(confirm(`大項目「${category}」を削除しますか？`)){ data.mainCategories=data.mainCategories.filter(c=>c!==category); save(); }
@@ -1784,7 +1894,7 @@
         <div class="card" style="border-color:var(--line);">
           <div class="card-title num">${lt}</div>
           <div class="card-sub" style="margin-top:4px;">${acc.mainCategory} / ${acc.assetClass}</div>
-          <div id="assetModalChart" class="area-wrap" style="height:clamp(150px,34vh,300px); margin-top:14px;"></div>
+          <div id="assetModalChart" class="area-wrap modal-chart" style="margin-top:14px;"></div>
           <div id="assetRangeTabs" class="range-tabs">
             ${tabs.map(([r,l])=>`<button class="range-tab ${r==="all"?"active":""}" data-range="${r}" onclick="setAssetModalRange('${r}')">${l}</button>`).join("")}
           </div>
@@ -1800,7 +1910,7 @@
         document.getElementById("modalTitle").textContent="資産推移";
         document.getElementById("modalSubtitle").textContent=`${monthLabel(month)} ・ ${ownerLabel(owner)}`;
         const series=chartSeriesForRange(month,owner,areaRange);
-        document.getElementById("modalBody").innerHTML=`<div class="area-wrap" style="height:clamp(160px,40vh,340px);">${createAreaSVG(series,520,340)}</div>`;
+        document.getElementById("modalBody").innerHTML=`<div class="area-wrap modal-chart-lg">${createAreaSVG(series,520,340)}</div>`;
       }
       if(type==="pie"){
         document.getElementById("modalTitle").textContent="資産の種類別割合";
@@ -1844,7 +1954,7 @@
       const tabs=[["3m","3ヶ月"],["6m","6ヶ月"],["1y","1年"],["3y","3年"],["5y","5年"],["all","全期間"]];
       document.getElementById("modalBody").innerHTML=`
         <div class="card" style="border-color:var(--line);">
-          <div id="classTrendChart" class="area-wrap" style="height:clamp(150px,34vh,300px);"></div>
+          <div id="classTrendChart" class="area-wrap modal-chart"></div>
           <div id="classRangeTabs" class="range-tabs">
             ${tabs.map(([r,l])=>`<button class="range-tab ${r==="all"?"active":""}" data-range="${r}" onclick="setClassTrendRange('${r}')">${l}</button>`).join("")}
           </div>
@@ -1870,7 +1980,7 @@
     }
     function openModal(){ document.getElementById("chartModal").classList.add("active"); document.body.style.overflow="hidden"; }
     function closeChartModal(event){ if(event&&event.target.id!=="chartModal") return; document.getElementById("chartModal").classList.remove("active"); document.body.style.overflow=""; }
-    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeChartModal(); closeConfirmModal(); closeInfoModal(); } });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeChartModal(); closeConfirmModal(); closeInfoModal(); closeEditAccount(); } });
 
     /* ---------- toast ---------- */
     let toastTimer=null;
@@ -2039,6 +2149,7 @@
     /* ---------- bulk input ---------- */
     function bulkAccountsFor(target){
       return data.accounts.filter(a=>{
+        if(a.archived) return false;
         const ow=accountOwners(a);
         if(target==="共通") return ow.length>=2;
         return ow.length===1 && ow[0]===target;
