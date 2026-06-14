@@ -243,7 +243,9 @@
     .kind-badge{ font-size:10px; font-weight:700; color:var(--primary); background:var(--primary-soft); border-radius:6px; padding:2px 6px; margin-right:6px; }
     .kind-badge.liability{ color:var(--down); background:#fbe9ec; }
     .row-actions{ display:flex; align-items:center; gap:8px; }
-    .edit-handle{ font-size:18px; color:var(--faint); padding:4px 6px; cursor:grab; touch-action:none; }
+    .edit-handle{ font-size:20px; color:var(--muted); padding:8px 12px; cursor:grab; touch-action:none; border-radius:8px; background:var(--bg); }
+    .edit-handle:active{ cursor:grabbing; background:var(--primary-soft); color:var(--primary); }
+    .reorder-lift{ position:relative; z-index:6; transform:scale(1.03); box-shadow:0 12px 28px rgba(20,30,60,.20); background:var(--panel); border-radius:12px; transition:transform .08s; }
 
     .empty{ text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0; }
     .group-block{ margin-top:14px; }
@@ -272,6 +274,8 @@
     /* modal */
     .modal{ display:none; position:fixed; inset:0; z-index:80; background:rgba(20,28,48,.42); align-items:flex-end; justify-content:center; padding:0; }
     .modal.active{ display:flex; }
+    .modal.center{ align-items:center; padding:18px; }
+    .modal.center .modal-panel{ border-radius:20px; max-height:86vh; }
     .modal-panel{
       background:var(--panel); width:100%; max-width:520px; border-radius:22px 22px 0 0;
       padding:18px 18px calc(20px + var(--safe-bottom)); max-height:88vh; overflow:auto;
@@ -353,13 +357,19 @@
 
         <section>
           <div class="owner-grid">
-            <div class="owner-card"><span>晴太 純資産</span><strong id="harutaNet" class="num">¥0</strong></div>
-            <div class="owner-card"><span>香花 純資産</span><strong id="kyokaNet" class="num">¥0</strong></div>
+            <div class="owner-card tap-card" onclick="openOwnerPie('晴太')"><span>晴太 純資産</span><strong id="harutaNet" class="num">¥0</strong></div>
+            <div class="owner-card tap-card" onclick="openOwnerPie('香花')"><span>香花 純資産</span><strong id="kyokaNet" class="num">¥0</strong></div>
           </div>
         </section>
 
         <section>
           <div class="mini-grid">
+            <div id="pieCardWrap" class="card tap-card" onclick="openChartModal('pie')">
+              <div class="section-title">資産の種類別割合</div>
+              <div id="pieCard" style="margin-top:12px;"></div>
+              <div class="tap-hint">タップで拡大・種類別の推移</div>
+            </div>
+
             <div class="card">
               <div class="section-title">内訳</div>
               <div style="margin-top:10px;">
@@ -368,12 +378,6 @@
                 <div class="meta-row"><span>USDレート (1 USD)</span><strong id="usdRateText" class="num">¥157</strong></div>
                 <div class="meta-row"><span>AEDレート (1 AED)</span><strong id="aedRateText" class="num">¥42</strong></div>
               </div>
-            </div>
-
-            <div id="pieCardWrap" class="card tap-card" onclick="openChartModal('pie')">
-              <div class="section-title">資産の種類別割合</div>
-              <div id="pieCard" style="margin-top:12px;"></div>
-              <div class="tap-hint">タップで拡大</div>
             </div>
           </div>
         </section>
@@ -527,7 +531,6 @@
             <div class="card-head" style="margin-bottom:2px;">
               <div>
                 <div class="card-title">一括入力（1か月分）</div>
-                <div class="card-sub">前月までの残高を引き継いで表示します。金額を直して、まとめて保存できます。外貨は上の為替レートで円換算します。</div>
               </div>
             </div>
 
@@ -738,7 +741,7 @@
     </div>
   </div>
 
-  <div id="chartModal" class="modal" onclick="closeChartModal(event)">
+  <div id="chartModal" class="modal center" onclick="closeChartModal(event)">
     <div class="modal-panel" onclick="event.stopPropagation()">
       <div class="modal-head">
         <div>
@@ -1191,21 +1194,45 @@
       document.querySelectorAll("#dashboard .range-tab").forEach(b=>b.classList.toggle("active", map[b.textContent]===areaRange));
     }
 
-    function pieData(){
-      const entries=totalsForSnapshot(selectedDashboardMonth(), selectedDashboardOwner()).entries.filter(e=>e.type==="asset");
-      const colors={ "現金":"#2f5bd0","株式（インデックス）":"#4f9d7a","株式（個別）":"#6aa9c9","外貨":"#b6c2dd","その他":"#cfd5df" };
-      const order=["現金","株式（インデックス）","株式（個別）","外貨","その他"];
-      const rows=order.map(k=>({ label:k, color:colors[k], amount:entries.filter(e=>e.assetClass===k).reduce((s,e)=>s+toJPY(e),0) })).filter(r=>r.amount>0);
-      const total=rows.reduce((s,r)=>s+r.amount,0);
+    const PIE_PALETTE = ["#2f5bd0","#4f9d7a","#6aa9c9","#c98a5a","#8e7cc3","#d1657a","#5aa0a0","#b6c2dd","#a0a86a","#cfd5df"];
+    function pieDataFor(month, owner){
+      const entries=totalsForSnapshot(month, owner).entries.filter(e=>e.type==="asset");
+      const byClass={};
+      entries.forEach(e=>{ byClass[e.assetClass]=(byClass[e.assetClass]||0)+toJPY(e); });
+      const total=Object.values(byClass).reduce((s,v)=>s+v,0);
+      if(!total) return { rows:[], total:0 };
+      // keep classes >= 1%, lump the rest into その他
+      const big=[]; let otherSum=0;
+      Object.keys(byClass).forEach(k=>{
+        const amt=byClass[k];
+        if((amt/total)*100 >= 1) big.push({ label:k, amount:amt });
+        else otherSum+=amt;
+      });
+      big.sort((a,b)=>b.amount-a.amount);
+      if(otherSum>0){
+        const existing=big.find(r=>r.label==="その他");
+        if(existing) existing.amount+=otherSum; else big.push({ label:"その他", amount:otherSum });
+      }
+      const rows=big.map((r,i)=>({ ...r, color:PIE_PALETTE[i % PIE_PALETTE.length] }));
       return { rows, total };
     }
-    function renderPieCard(targetId="pieCard"){
+    function pieData(){ return pieDataFor(selectedDashboardMonth(), selectedDashboardOwner()); }
+
+    function renderPieCard(targetId="pieCard", opts={}){
       const target=document.getElementById(targetId);
-      const { rows, total }=pieData();
+      const month=opts.month || selectedDashboardMonth();
+      const owner=opts.owner || selectedDashboardOwner();
+      const interactive=!!opts.interactive;
+      const { rows, total }=pieDataFor(month, owner);
       if(!rows.length){ target.innerHTML=`<div class="empty">資産データがありません</div>`; return; }
       let deg=0;
       const chartRows=rows.map(r=>{ const start=deg; const pct=total?(r.amount/total)*100:0; deg+=(r.amount/total)*360; return {...r,pct,start,end:deg}; });
       const gradient=chartRows.map(r=>`${r.color} ${r.start}deg ${r.end}deg`).join(", ");
+      const legend=chartRows.map(r=>{
+        const click = interactive ? ` class="legend-item tap-row" style="cursor:pointer;" onclick="showClassTrend('${r.label.replace(/'/g,"\\'")}','${owner}')"` : ` class="legend-item"`;
+        const arrow = interactive ? ` <span style="color:var(--faint);">›</span>` : "";
+        return `<div${click}><span class="lab"><span class="swatch" style="background:${r.color}"></span>${r.label}</span><span class="num">${r.pct.toFixed(1)}%${arrow}</span></div>`;
+      }).join("");
       target.innerHTML=`
         <div class="donut-layout">
           <div class="donut-stage">
@@ -1213,9 +1240,8 @@
               <div class="donut-center"><div class="label">資産合計</div><div class="value num">${formatJPY(total).replace("¥","")}円</div></div>
             </div>
           </div>
-          <div class="legend">
-            ${chartRows.map(r=>`<div class="legend-item"><span class="lab"><span class="swatch" style="background:${r.color}"></span>${r.label}</span><span class="num">${r.pct.toFixed(1)}%</span></div>`).join("")}
-          </div>
+          <div class="legend">${legend}</div>
+          ${interactive?`<div class="tap-hint">種類をタップで推移を表示</div>`:""}
         </div>`;
     }
 
@@ -1262,10 +1288,11 @@
       if(!entries.length){ box.innerHTML=header+`<div class="empty">この時点までのデータがありません。</div>`; return; }
 
       const topLabel={asset:"資産", liability:"負債"};
+      const sumJPY=(arr)=>arr.reduce((s,e)=>s+toJPY(e),0);
+      const totalRow=(label,arr)=>`<div class="row" style="border-top:2px solid var(--line-strong); border-bottom:none; margin-top:4px;"><div class="row-title">${label}合計</div><div class="row-amt num">${formatJPY(sumJPY(arr))}</div></div>`;
       let body="";
 
       if(owner==="all"){
-        // group by owner first, then type, then category
         ["晴太","香花"].forEach(person=>{
           const pe=entries.filter(e=>e.owner===person);
           if(!pe.length) return;
@@ -1276,7 +1303,7 @@
           ["asset","liability"].forEach(type=>{
             const te=pe.filter(e=>e.type===type);
             if(!te.length) return;
-            body+=`<div style="margin-top:6px;"><div class="group-title" style="font-size:14px; color:var(--muted);">${topLabel[type]}</div>${categoryBlocksHtml(te)}</div>`;
+            body+=`<div style="margin-top:6px;"><div class="group-title" style="font-size:14px; color:var(--muted);">${topLabel[type]}</div>${categoryBlocksHtml(te)}${totalRow(topLabel[type],te)}</div>`;
           });
           body+=`</div>`;
         });
@@ -1284,7 +1311,7 @@
         ["asset","liability"].forEach(type=>{
           const te=entries.filter(e=>e.type===type);
           if(!te.length) return;
-          body+=`<div class="group-block"><div class="group-title" style="font-size:15px;">${topLabel[type]}</div>${categoryBlocksHtml(te)}</div>`;
+          body+=`<div class="group-block"><div class="group-title" style="font-size:15px;">${topLabel[type]}</div>${categoryBlocksHtml(te)}${totalRow(topLabel[type],te)}</div>`;
         });
       }
       box.innerHTML=header+body;
@@ -1539,35 +1566,48 @@
       if(!masterEditMode) return;
       event.preventDefault(); event.stopPropagation();
       reorderState={ kind, value, parent };
+      document.body.style.userSelect="none";
+      const liftCurrent=()=>{
+        document.querySelectorAll(".reorder-lift").forEach(el=>el.classList.remove("reorder-lift"));
+        const row=document.querySelector(`.reorder-row[data-reorder-kind="${kind}"][data-reorder-value="${value}"]`);
+        if(row) row.classList.add("reorder-lift");
+      };
+      liftCurrent();
       const move=(ev)=>{
+        if(ev.cancelable) ev.preventDefault();
         const point=ev.touches?ev.touches[0]:ev;
         const el=document.elementFromPoint(point.clientX,point.clientY);
         const row=el&&el.closest(`.reorder-row[data-reorder-kind="${kind}"]`);
-        if(!row) return;
-        const targetValue=row.getAttribute("data-reorder-value");
-        if(targetValue===value) return;
-        if(kind==="account"){
-          const fromIdx=data.accounts.findIndex(a=>a.id===value);
-          const toIdx=data.accounts.findIndex(a=>a.id===targetValue);
-          data.accounts=moveItemInArray(data.accounts,fromIdx,toIdx);
-        } else if(kind==="mainCategory"){
-          const fromIdx=data.mainCategories.indexOf(value);
-          const toIdx=data.mainCategories.indexOf(targetValue);
-          data.mainCategories=moveItemInArray(data.mainCategories,fromIdx,toIdx);
-        } else if(kind==="assetClass"){
-          const fromIdx=data.assetClasses.indexOf(value);
-          const toIdx=data.assetClasses.indexOf(targetValue);
-          data.assetClasses=moveItemInArray(data.assetClasses,fromIdx,toIdx);
+        if(row){
+          const targetValue=row.getAttribute("data-reorder-value");
+          if(targetValue!==value){
+            if(kind==="account"){
+              const fromIdx=data.accounts.findIndex(a=>a.id===value);
+              const toIdx=data.accounts.findIndex(a=>a.id===targetValue);
+              data.accounts=moveItemInArray(data.accounts,fromIdx,toIdx);
+            } else if(kind==="mainCategory"){
+              const fromIdx=data.mainCategories.indexOf(value);
+              const toIdx=data.mainCategories.indexOf(targetValue);
+              data.mainCategories=moveItemInArray(data.mainCategories,fromIdx,toIdx);
+            } else if(kind==="assetClass"){
+              const fromIdx=data.assetClasses.indexOf(value);
+              const toIdx=data.assetClasses.indexOf(targetValue);
+              data.assetClasses=moveItemInArray(data.assetClasses,fromIdx,toIdx);
+            }
+            renderAccountList();
+          }
         }
-        renderAccountList();
+        liftCurrent();
       };
       const up=()=>{
         document.removeEventListener("pointermove",move);
         document.removeEventListener("pointerup",up);
+        document.body.style.userSelect="";
+        document.querySelectorAll(".reorder-lift").forEach(el=>el.classList.remove("reorder-lift"));
         reorderState=null;
         save();
       };
-      document.addEventListener("pointermove",move);
+      document.addEventListener("pointermove",move,{passive:false});
       document.addEventListener("pointerup",up);
     }
 
@@ -1742,6 +1782,8 @@
       renderAssetModalChart();
       openModal();
     }
+    let classTrendCtx = null;
+    let classTrendRange = "all";
     function openChartModal(type){
       const month=selectedDashboardMonth(), owner=selectedDashboardOwner();
       if(type==="area"){
@@ -1754,9 +1796,67 @@
         document.getElementById("modalTitle").textContent="資産の種類別割合";
         document.getElementById("modalSubtitle").textContent=`${monthLabel(month)} ・ ${ownerLabel(owner)}`;
         document.getElementById("modalBody").innerHTML=`<div id="modalPie"></div>`;
-        renderPieCard("modalPie");
+        renderPieCard("modalPie", { month, owner, interactive:true });
       }
       openModal();
+    }
+    function openOwnerPie(owner){
+      const month=selectedDashboardMonth();
+      document.getElementById("modalTitle").textContent=`${owner} の資産の種類別割合`;
+      document.getElementById("modalSubtitle").textContent=`${monthLabel(month)}時点`;
+      document.getElementById("modalBody").innerHTML=`<div id="modalPie"></div>`;
+      renderPieCard("modalPie", { month, owner, interactive:true });
+      openModal();
+    }
+    // sum of a given asset class (in JPY) over months, for the trend line
+    function classSeriesForRange(assetClass, owner, endMonth, range){
+      const months=selectableMonths().filter(m=>compareMonth(m,endMonth)<=0);
+      let full=months.map(m=>{
+        const v=snapshotEntriesUpTo(m,owner).filter(e=>e.type==="asset"&&e.assetClass===assetClass).reduce((s,e)=>s+toJPY(e),0);
+        return { month:m, value:v };
+      });
+      const firstNonZero=full.findIndex(p=>p.value!==0);
+      if(firstNonZero>0) full=full.slice(firstNonZero);
+      let use=full;
+      if(range==="3m") use=full.slice(-3);
+      if(range==="6m") use=full.slice(-6);
+      if(range==="1y") use=full.slice(-12);
+      if(range==="3y") use=full.slice(-36);
+      if(range==="5y") use=full.slice(-60);
+      return use.length?use:[{month:endMonth,value:0}];
+    }
+    function showClassTrend(assetClass, owner){
+      const month=selectedDashboardMonth();
+      classTrendCtx={ assetClass, owner, month };
+      classTrendRange="all";
+      document.getElementById("modalTitle").textContent=`${assetClass} の推移`;
+      document.getElementById("modalSubtitle").textContent=`${ownerLabel(owner)} ・ ${monthLabel(month)}時点`;
+      const tabs=[["3m","3ヶ月"],["6m","6ヶ月"],["1y","1年"],["3y","3年"],["5y","5年"],["all","全期間"]];
+      document.getElementById("modalBody").innerHTML=`
+        <div class="card" style="border-color:var(--line);">
+          <div id="classTrendChart" class="area-wrap" style="height:300px;"></div>
+          <div id="classRangeTabs" class="range-tabs">
+            ${tabs.map(([r,l])=>`<button class="range-tab ${r==="all"?"active":""}" data-range="${r}" onclick="setClassTrendRange('${r}')">${l}</button>`).join("")}
+          </div>
+          <button class="soft" type="button" style="margin-top:12px;" onclick="backToPie('${owner.replace(/'/g,"\\'")}')">‹ 割合に戻る</button>
+        </div>`;
+      renderClassTrendChart();
+    }
+    function renderClassTrendChart(){
+      if(!classTrendCtx) return;
+      const { assetClass, owner, month }=classTrendCtx;
+      const series=classSeriesForRange(assetClass, owner, month, classTrendRange);
+      const el=document.getElementById("classTrendChart");
+      if(el) el.innerHTML=createAreaSVG(series,520,300);
+      document.querySelectorAll("#classRangeTabs .range-tab").forEach(b=>b.classList.toggle("active", b.getAttribute("data-range")===classTrendRange));
+    }
+    function setClassTrendRange(r){ classTrendRange=r; renderClassTrendChart(); }
+    function backToPie(owner){
+      const month=selectedDashboardMonth();
+      document.getElementById("modalTitle").textContent=(owner==="all")?"資産の種類別割合":`${owner} の資産の種類別割合`;
+      document.getElementById("modalSubtitle").textContent=`${monthLabel(month)}${owner==="all"?` ・ ${ownerLabel(owner)}`:"時点"}`;
+      document.getElementById("modalBody").innerHTML=`<div id="modalPie"></div>`;
+      renderPieCard("modalPie", { month, owner, interactive:true });
     }
     function openModal(){ document.getElementById("chartModal").classList.add("active"); document.body.style.overflow="hidden"; }
     function closeChartModal(event){ if(event&&event.target.id!=="chartModal") return; document.getElementById("chartModal").classList.remove("active"); document.body.style.overflow=""; }
