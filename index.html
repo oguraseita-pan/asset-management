@@ -1262,17 +1262,23 @@
         <div class="row-amt num">${amt}</div>
       </div>`;
     }
+    function accountOrderIndex(id){ const i=data.accounts.findIndex(a=>a.id===id); return i<0?9999:i; }
     function byMainCategory(entries){
       const g={};
-      entries.slice().sort((a,b)=>{
-        if(a.mainCategory!==b.mainCategory) return a.mainCategory.localeCompare(b.mainCategory,"ja");
-        return accountById(a.accountId).name.localeCompare(accountById(b.accountId).name,"ja");
-      }).forEach(e=>{ (g[e.mainCategory]=g[e.mainCategory]||[]).push(e); });
+      // sort entries by registration order of their account (data.accounts order)
+      entries.slice().sort((a,b)=>accountOrderIndex(a.accountId)-accountOrderIndex(b.accountId))
+        .forEach(e=>{ (g[e.mainCategory]=g[e.mainCategory]||[]).push(e); });
       return g;
     }
     function categoryBlocksHtml(entries){
       const g=byMainCategory(entries);
-      return Object.keys(g).map(cat=>`
+      // order categories by registered mainCategories order
+      const order=(data.mainCategories||[]);
+      const cats=Object.keys(g).sort((a,b)=>{
+        const ia=order.indexOf(a), ib=order.indexOf(b);
+        return (ia<0?9999:ia)-(ib<0?9999:ib);
+      });
+      return cats.map(cat=>`
         <div style="margin-top:8px;">
           <div class="section-title">${cat}</div>
           ${g[cat].map(entryRowHtml).join("")}
@@ -1778,7 +1784,7 @@
         <div class="card" style="border-color:var(--line);">
           <div class="card-title num">${lt}</div>
           <div class="card-sub" style="margin-top:4px;">${acc.mainCategory} / ${acc.assetClass}</div>
-          <div id="assetModalChart" class="area-wrap" style="height:300px; margin-top:14px;"></div>
+          <div id="assetModalChart" class="area-wrap" style="height:clamp(150px,34vh,300px); margin-top:14px;"></div>
           <div id="assetRangeTabs" class="range-tabs">
             ${tabs.map(([r,l])=>`<button class="range-tab ${r==="all"?"active":""}" data-range="${r}" onclick="setAssetModalRange('${r}')">${l}</button>`).join("")}
           </div>
@@ -1794,7 +1800,7 @@
         document.getElementById("modalTitle").textContent="資産推移";
         document.getElementById("modalSubtitle").textContent=`${monthLabel(month)} ・ ${ownerLabel(owner)}`;
         const series=chartSeriesForRange(month,owner,areaRange);
-        document.getElementById("modalBody").innerHTML=`<div class="area-wrap" style="height:340px;">${createAreaSVG(series,520,340)}</div>`;
+        document.getElementById("modalBody").innerHTML=`<div class="area-wrap" style="height:clamp(160px,40vh,340px);">${createAreaSVG(series,520,340)}</div>`;
       }
       if(type==="pie"){
         document.getElementById("modalTitle").textContent="資産の種類別割合";
@@ -1838,7 +1844,7 @@
       const tabs=[["3m","3ヶ月"],["6m","6ヶ月"],["1y","1年"],["3y","3年"],["5y","5年"],["all","全期間"]];
       document.getElementById("modalBody").innerHTML=`
         <div class="card" style="border-color:var(--line);">
-          <div id="classTrendChart" class="area-wrap" style="height:300px;"></div>
+          <div id="classTrendChart" class="area-wrap" style="height:clamp(150px,34vh,300px);"></div>
           <div id="classRangeTabs" class="range-tabs">
             ${tabs.map(([r,l])=>`<button class="range-tab ${r==="all"?"active":""}" data-range="${r}" onclick="setClassTrendRange('${r}')">${l}</button>`).join("")}
           </div>
