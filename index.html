@@ -57,9 +57,18 @@
     .title{ font-size:22px; font-weight:700; letter-spacing:-.02em; }
     .brand-chip{
       font-size:11px; font-weight:600; color:var(--muted);
-      border:1px solid var(--line-strong); border-radius:999px; padding:5px 11px;
-      background:var(--panel);
+      border:1px solid var(--line-strong); border-radius:999px; padding:6px 13px;
+      background:var(--panel); display:inline-flex; align-items:center; gap:5px; cursor:pointer;
     }
+    .brand-chip svg{ width:13px; height:13px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+    .brand-chip:active{ opacity:.7; }
+    .brand-chip.active{ color:#fff; background:var(--ink); border-color:var(--ink); }
+
+    /* privacy mode: hide numbers/charts when showing to others */
+    .privacy-on .num,
+    .privacy-on #deltaText,
+    .privacy-on .area-wrap,
+    .privacy-on .donut-stage{ filter:blur(9px); transition:filter .12s; }
 
     .screen{ display:none; padding:0 16px; }
     .screen.active{ display:block; animation:fade .18s ease; }
@@ -287,7 +296,9 @@
     <header>
       <div class="app-brand">
         <div class="title">Ogura Family Finance</div>
-        <div class="brand-chip">Private</div>
+        <button id="privateBadge" class="brand-chip" onclick="togglePrivacy()" aria-label="数値の表示・非表示を切り替え">
+          <span id="privateIcon"></span><span id="privateText">Private</span>
+        </button>
       </div>
     </header>
 
@@ -408,6 +419,16 @@
       <!-- INPUT -->
       <div id="input" class="screen">
         <section>
+          <div class="card" style="padding:14px 16px;">
+            <div class="form-grid" style="align-items:end;">
+              <label style="font-size:12px;">為替 1 USD = 円<input id="rateUSD" type="number" step="0.01" inputmode="decimal" style="margin-top:5px; padding:10px 12px;" /></label>
+              <label style="font-size:12px;">1 AED = 円（自動）<input id="rateAED" type="number" step="0.01" readonly style="margin-top:5px; padding:10px 12px;" /></label>
+            </div>
+            <form id="rateForm"><button type="submit" class="btn-primary" style="margin-top:10px; padding:11px;">為替レートを保存</button></form>
+          </div>
+        </section>
+
+        <section>
           <div class="card">
             <div class="card-head" style="margin-bottom:14px;">
               <div>
@@ -484,105 +505,135 @@
       </div>
 
       <!-- MASTERS -->
-      <div id="masters" class="screen">
+      <div id="bulk" class="screen">
         <section>
-          <div class="card stack">
-            <div class="card-head" style="margin-bottom:2px;">
-              <div>
-                <div class="card-title">項目を登録</div>
-                <div class="card-sub">大項目 → 小項目 を登録します。</div>
-              </div>
+          <div class="card" style="padding:14px 16px;">
+            <div class="form-grid" style="align-items:end;">
+              <label style="font-size:12px;">為替 1 USD = 円<input id="bulkRateUSD" type="number" step="0.01" inputmode="decimal" style="margin-top:5px; padding:10px 12px;" /></label>
+              <label style="font-size:12px;">1 AED = 円（自動）<input id="bulkRateAED" type="number" step="0.01" readonly style="margin-top:5px; padding:10px 12px;" /></label>
             </div>
-
-            <form id="accountForm" class="stack">
-              <label>種別
-                <select id="accountKind">
-                  <option value="asset">資産</option>
-                  <option value="liability">負債</option>
-                </select>
-              </label>
-
-              <label>大項目
-                <select id="accountMainCategory">
-                  <option>銀行</option>
-                  <option>証券口座</option>
-                  <option>クレジットカード</option>
-                  <option>現金</option>
-                  <option>外貨口座</option>
-                  <option>ローン</option>
-                  <option>その他</option>
-                </select>
-              </label>
-
-              <label>大項目を新しく追加する場合
-                <input id="accountMainCategoryCustom" placeholder="例：保険 / 不動産 / 暗号資産" />
-              </label>
-
-              <label>小項目名
-                <input id="accountName" placeholder="例：SBI証券 インデックス" required />
-              </label>
-
-              <label>使う人
-                <select id="accountOwners">
-                  <option value="both">2人共通</option>
-                  <option value="晴太">晴太</option>
-                  <option value="香花">香花</option>
-                </select>
-              </label>
-
-              <div class="form-grid">
-                <label>資産・負債種類
-                  <select id="accountAssetClass">
-                    <option>現金</option>
-                    <option>株式（インデックス）</option>
-                    <option>株式（個別）</option>
-                    <option>外貨</option>
-                    <option>クレジットカード</option>
-                    <option>ローン</option>
-                    <option>その他</option>
-                  </select>
-                </label>
-                <label>標準通貨
-                  <select id="accountCurrency">
-                    <option>JPY</option>
-                    <option>AED</option>
-                    <option>USD</option>
-                  </select>
-                </label>
-              </div>
-
-              <label>資産・負債種類を新しく追加する場合
-                <input id="accountAssetClassCustom" placeholder="例：保険 / 不動産 / 暗号資産 / 退職金" />
-              </label>
-
-              <button type="submit">登録する</button>
-            </form>
-
-            <div id="registrationSuccess" class="note-box" style="display:none;"></div>
-            <div class="master-note">登録済みの小項目は下の一覧から削除できます。月次データで使用中の項目を削除すると、関連する月次データも一緒に削除されます。</div>
+            <button type="button" class="btn-primary" style="margin-top:10px; padding:11px;" onclick="saveBulkRate()">為替レートを保存</button>
           </div>
         </section>
 
         <section>
-          <div id="accountList" class="card"></div>
+          <div class="card stack">
+            <div class="card-head" style="margin-bottom:2px;">
+              <div>
+                <div class="card-title">一括入力（1か月分）</div>
+                <div class="card-sub">前月までの残高を引き継いで表示します。金額を直して、まとめて保存できます。外貨は上の為替レートで円換算します。</div>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <label>月<select id="bulkMonth"></select></label>
+              <label>対象
+                <select id="bulkOwner">
+                  <option value="晴太">晴太</option>
+                  <option value="香花">香花</option>
+                  <option value="共通">共通</option>
+                </select>
+              </label>
+            </div>
+
+            <label id="bulkRecordOwnerWrap" style="display:none;">記録する人
+              <select id="bulkRecordOwner">
+                <option>晴太</option>
+                <option>香花</option>
+              </select>
+              <span class="rate-flag">共通の口座の残高を、誰の資産として記録するか選びます。</span>
+            </label>
+          </div>
+        </section>
+
+        <section>
+          <div id="bulkList" class="card"></div>
         </section>
       </div>
 
       <!-- SETTINGS -->
       <div id="settings" class="screen">
+
         <section>
-          <div class="card">
-            <div class="card-title">為替レート</div>
-            <div class="card-sub" style="margin-bottom:14px;">今後の入力時の初期値になります。AEDはUSDから自動計算します。</div>
-            <form id="rateForm" class="stack">
-              <div class="form-grid">
-                <label>1 USD = 円<input id="rateUSD" type="number" step="0.01" /></label>
-                <label>1 AED = 円（自動）<input id="rateAED" type="number" step="0.01" readonly /></label>
-              </div>
-              <button type="submit">為替レートを保存</button>
-            </form>
+          <div class="card stack">
+            <div class="master-title-row">
+              <div class="card-title">項目の登録</div>
+              <button id="regToggleBtn" class="ghost" type="button" style="width:auto; padding:8px 14px;" onclick="toggleRegDetails()">開く</button>
+            </div>
+            <div class="card-sub">普段は閉じておけます。新しい口座や種類を追加するときに開いてください。</div>
+
+            <div id="regDetails" style="display:none;">
+              <form id="accountForm" class="stack">
+                <label>種別
+                  <select id="accountKind">
+                    <option value="asset">資産</option>
+                    <option value="liability">負債</option>
+                  </select>
+                </label>
+
+                <label>大項目
+                  <select id="accountMainCategory">
+                    <option>銀行</option>
+                    <option>証券口座</option>
+                    <option>クレジットカード</option>
+                    <option>現金</option>
+                    <option>外貨口座</option>
+                    <option>ローン</option>
+                    <option>その他</option>
+                  </select>
+                </label>
+
+                <label>大項目を新しく追加する場合
+                  <input id="accountMainCategoryCustom" placeholder="例：保険 / 不動産 / 暗号資産" />
+                </label>
+
+                <label>小項目名
+                  <input id="accountName" placeholder="例：SBI証券 インデックス" required />
+                </label>
+
+                <label>使う人
+                  <select id="accountOwners">
+                    <option value="both">2人共通</option>
+                    <option value="晴太">晴太</option>
+                    <option value="香花">香花</option>
+                  </select>
+                </label>
+
+                <div class="form-grid">
+                  <label>資産・負債種類
+                    <select id="accountAssetClass">
+                      <option>現金</option>
+                      <option>株式（インデックス）</option>
+                      <option>株式（個別）</option>
+                      <option>外貨</option>
+                      <option>クレジットカード</option>
+                      <option>ローン</option>
+                      <option>その他</option>
+                    </select>
+                  </label>
+                  <label>標準通貨
+                    <select id="accountCurrency">
+                      <option>JPY</option>
+                      <option>AED</option>
+                      <option>USD</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label>資産・負債種類を新しく追加する場合
+                  <input id="accountAssetClassCustom" placeholder="例：保険 / 不動産 / 暗号資産 / 退職金" />
+                </label>
+
+                <button type="submit">登録する</button>
+              </form>
+
+              <div id="registrationSuccess" class="note-box" style="display:none; margin-top:12px;"></div>
+              <div class="master-note" style="margin-top:10px;">月次データで使用中の項目を削除すると、関連する月次データも一緒に削除されます。</div>
+              <div id="accountList" class="card" style="margin-top:14px;"></div>
+            </div>
           </div>
         </section>
+        <section>
 
         <section>
           <div class="card stack">
@@ -663,11 +714,11 @@
         <button class="tab" data-tab="list" onclick="showTab('list')">
           <svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span class="txt">一覧</span>
         </button>
+        <button class="tab" data-tab="bulk" onclick="showTab('bulk')">
+          <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="3" rx="1"/><rect x="4" y="10.5" width="16" height="3" rx="1"/><rect x="4" y="16" width="16" height="3" rx="1"/></svg><span class="txt">一括入力</span>
+        </button>
         <button class="tab" data-tab="input" onclick="showTab('input')">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span class="txt">入力</span>
-        </button>
-        <button class="tab" data-tab="masters" onclick="showTab('masters')">
-          <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><span class="txt">登録</span>
         </button>
         <button class="tab" data-tab="settings" onclick="showTab('settings')">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span class="txt">設定</span>
@@ -700,9 +751,23 @@
       </div>
       <div id="confirmBody"></div>
       <div class="stack" style="margin-top:16px;">
-        <button class="btn-primary" type="button" onclick="commitEntry()">保存する</button>
+        <button class="btn-primary" type="button" onclick="runPendingConfirm()">保存する</button>
         <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="closeConfirmModal()">戻る（修正する）</button>
       </div>
+    </div>
+  </div>
+
+  <div id="infoModal" class="modal" onclick="closeInfoModal(event)">
+    <div class="modal-panel" onclick="event.stopPropagation()">
+      <div class="modal-head">
+        <div>
+          <strong id="infoTitle">完了</strong>
+          <span id="infoSubtitle"></span>
+        </div>
+        <button class="close" onclick="closeInfoModal()">×</button>
+      </div>
+      <div id="infoBody"></div>
+      <button class="btn-primary" type="button" style="margin-top:16px;" onclick="closeInfoModal()">OK</button>
     </div>
   </div>
 
@@ -963,6 +1028,15 @@
       renderMonthPicker("filterMonth");
       renderMonthPicker("listMonth");
 
+      // populate "資産・負債種類" from registered list (fixes new types not appearing)
+      const entryAssetClass = document.getElementById("entryAssetClass");
+      if(entryAssetClass){
+        const oldAC = entryAssetClass.value;
+        data.assetClasses = [...new Set([...(data.assetClasses||[]), ...data.accounts.map(a=>a.assetClass).filter(Boolean)])];
+        entryAssetClass.innerHTML = data.assetClasses.map(v=>`<option value="${v}">${v}</option>`).join("");
+        if(data.assetClasses.includes(oldAC)) entryAssetClass.value = oldAC;
+      }
+
       const entryMainCategory = document.getElementById("entryMainCategory");
       const entryAccount = document.getElementById("entryAccount");
       const selectedKind = document.getElementById("entryType").value || "asset";
@@ -1023,6 +1097,7 @@
       renderPieCard();
       renderList();
       renderAccountList();
+      renderBulk();
     }
 
     function toggleCurrentButtons(){
@@ -1239,13 +1314,32 @@
         ${categoryHtml}${assetHtml}`;
     }
 
+    /* ---------- privacy mode (hide numbers when showing others) ---------- */
+    const PRIVACY_KEY = "ogura-privacy";
+    let privacyMode = localStorage.getItem(PRIVACY_KEY) === "1";
+    function applyPrivacy(){
+      document.body.classList.toggle("privacy-on", privacyMode);
+      const badge=document.getElementById("privateBadge");
+      const text=document.getElementById("privateText");
+      if(badge) badge.classList.toggle("active", privacyMode);
+      if(text) text.textContent = privacyMode ? "非表示中" : "Private";
+    }
+    function togglePrivacy(){
+      privacyMode = !privacyMode;
+      localStorage.setItem(PRIVACY_KEY, privacyMode ? "1" : "0");
+      applyPrivacy();
+    }
+
     /* ---------- tabs ---------- */
     function showTab(id){
       document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
       document.getElementById(id).classList.add("active");
       document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
       document.querySelector(`.tab[data-tab="${id}"]`).classList.add("active");
+      const badge=document.getElementById("privateBadge");
+      if(badge) badge.style.display = (id==="dashboard") ? "inline-flex" : "none";
       if(id==="input") document.getElementById("entryMonth").value=latestSelectableMonth();
+      if(id==="bulk"){ const bm=document.getElementById("bulkMonth"); if(bm && !bm.value) bm.value=latestSelectableMonth(); }
       window.scrollTo({top:0, behavior:"smooth"});
       render();
     }
@@ -1320,7 +1414,30 @@
       openConfirmModal(pendingEntry, acc);
     });
 
+    let pendingConfirm = null;
+    function runPendingConfirm(){ if(pendingConfirm) pendingConfirm(); }
+
+    function showInfo(title, bodyHtml, subtitle){
+      document.getElementById("infoTitle").textContent = title;
+      document.getElementById("infoSubtitle").textContent = subtitle || "";
+      document.getElementById("infoBody").innerHTML = bodyHtml;
+      document.getElementById("infoModal").classList.add("active");
+      document.body.style.overflow="hidden";
+    }
+    function closeInfoModal(event){
+      if(event && event.target.id!=="infoModal") return;
+      document.getElementById("infoModal").classList.remove("active");
+      document.body.style.overflow="";
+    }
+    function showRateSaved(){
+      showInfo("為替レートを保存しました",
+        `<div class="meta-row"><span>1 USD</span><strong class="num">¥${data.rates.USD}</strong></div>
+         <div class="meta-row"><span>1 AED（自動計算）</span><strong class="num">¥${data.rates.AED}</strong></div>`,
+        "今後の外貨入力の初期レートになります");
+    }
+
     function openConfirmModal(entry, acc){
+      pendingConfirm = commitEntry;
       const exists = data.entries.some(x=>x.month===entry.month && x.owner===entry.owner && x.accountId===entry.accountId);
       const rows=[
         ["月", monthLabel(entry.month)],
@@ -1389,7 +1506,7 @@
       data.rates.USD=Number(document.getElementById("rateUSD").value)||data.rates.USD;
       data.rates.AED=Number((data.rates.USD/AED_PER_USD).toFixed(2));
       save();
-      toast("為替レートを保存しました");
+      showRateSaved();
     });
 
     /* ---------- reorder ---------- */
@@ -1621,7 +1738,7 @@
     }
     function openModal(){ document.getElementById("chartModal").classList.add("active"); document.body.style.overflow="hidden"; }
     function closeChartModal(event){ if(event&&event.target.id!=="chartModal") return; document.getElementById("chartModal").classList.remove("active"); document.body.style.overflow=""; }
-    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeChartModal(); closeConfirmModal(); } });
+    document.addEventListener("keydown",(e)=>{ if(e.key==="Escape"){ closeChartModal(); closeConfirmModal(); closeInfoModal(); } });
 
     /* ---------- toast ---------- */
     let toastTimer=null;
@@ -1778,6 +1895,137 @@
       else pushTimer = setTimeout(doPush, 700); // debounce rapid edits
     }
 
+    function toggleRegDetails(force){
+      const el=document.getElementById("regDetails");
+      const btn=document.getElementById("regToggleBtn");
+      if(!el) return;
+      const open=(typeof force==="boolean")?force:(el.style.display==="none");
+      el.style.display=open?"block":"none";
+      if(btn) btn.textContent=open?"閉じる":"開く";
+    }
+
+    /* ---------- bulk input ---------- */
+    function bulkAccountsFor(target){
+      return data.accounts.filter(a=>{
+        const ow=accountOwners(a);
+        if(target==="共通") return ow.length>=2;
+        return ow.length===1 && ow[0]===target;
+      });
+    }
+    function bulkRecordOwner(){
+      const target=document.getElementById("bulkOwner").value;
+      return target==="共通" ? document.getElementById("bulkRecordOwner").value : target;
+    }
+    function renderBulk(){
+      const monthSel=document.getElementById("bulkMonth");
+      if(!monthSel) return;
+      const ru=document.getElementById("bulkRateUSD"); if(ru) ru.value=data.rates.USD;
+      const ra=document.getElementById("bulkRateAED"); if(ra) ra.value=data.rates.AED;
+      const allMonths=selectableMonths();
+      const cur=monthSel.value || latestSelectableMonth();
+      monthSel.innerHTML=allMonths.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join("");
+      monthSel.value=allMonths.includes(cur)?cur:latestSelectableMonth();
+
+      const target=document.getElementById("bulkOwner").value;
+      document.getElementById("bulkRecordOwnerWrap").style.display = target==="共通" ? "block" : "none";
+      const recOwner=bulkRecordOwner();
+      const month=monthSel.value;
+      const box=document.getElementById("bulkList");
+      const accounts=bulkAccountsFor(target);
+      if(!accounts.length){ box.innerHTML=`<div class="empty">「${target}」に設定された項目がありません。設定の「項目の登録」で使う人を設定してください。</div>`; return; }
+
+      const assets=accounts.filter(a=>a.kind==="asset");
+      const liabs=accounts.filter(a=>a.kind==="liability");
+      const snapshot=snapshotEntriesUpTo(month, recOwner);
+      const lastFor=(id)=> snapshot.find(e=>e.accountId===id);
+
+      function rowFor(a){
+        const last=lastFor(a.id);
+        const val=last?formatMoneyString(String(last.amount)):"";
+        const unit = a.currency==="JPY" ? "¥" : a.currency;
+        return `<div style="padding:12px 0; border-bottom:1px solid var(--line);">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+            <div style="min-width:0;"><div class="row-title">${a.name}</div>
+              <div class="row-meta">${a.assetClass}${a.currency!=="JPY"?` ・ ${a.currency}`:""}${last?` ・ 前回 ${monthLabel(last.month)}`:""}</div></div>
+            <div style="display:flex; align-items:center; gap:6px; flex:0 0 auto;">
+              <span class="row-meta" style="margin:0;">${unit}</span>
+              <input type="text" inputmode="decimal" autocomplete="off" id="bulkamt_${a.id}" value="${val}" placeholder="未入力" style="margin-top:0; padding:10px; max-width:150px; text-align:right;" />
+            </div>
+          </div>
+        </div>`;
+      }
+      function block(title, list){
+        if(!list.length) return "";
+        const byCat={};
+        list.forEach(a=>{ (byCat[a.mainCategory]=byCat[a.mainCategory]||[]).push(a); });
+        return `<div class="group-block"><div class="group-title" style="font-size:15px;">${title}</div>
+          ${Object.keys(byCat).map(c=>`<div style="margin-top:6px;"><div class="section-title">${c}</div>${byCat[c].map(rowFor).join("")}</div>`).join("")}
+        </div>`;
+      }
+
+      box.innerHTML=`<div class="card-title" style="margin-bottom:2px;">${monthLabel(month)} ・ ${target}${target==="共通"?`（記録：${recOwner}）`:""}</div>
+        <div class="card-sub" style="margin-bottom:6px;">空欄のままの項目は保存されません（前回の残高が引き継がれます）。</div>
+        ${block("資産", assets)}${block("負債", liabs)}
+        <button class="btn-primary" type="button" style="margin-top:16px;" onclick="confirmBulk()">この内容で一括保存</button>`;
+
+      box.querySelectorAll('input[id^="bulkamt_"]').forEach(inp=>{
+        inp.addEventListener("input",()=>{ inp.value=formatMoneyString(inp.value); });
+      });
+    }
+    function saveBulkRate(){
+      const v=Number(document.getElementById("bulkRateUSD").value);
+      if(v>0){ data.rates.USD=v; data.rates.AED=Number((v/AED_PER_USD).toFixed(2)); save(); showRateSaved(); }
+    }
+    document.getElementById("bulkMonth").addEventListener("change", renderBulk);
+    document.getElementById("bulkOwner").addEventListener("change", renderBulk);
+    document.getElementById("bulkRecordOwner").addEventListener("change", renderBulk);
+
+    function collectBulk(){
+      const target=document.getElementById("bulkOwner").value;
+      const recOwner=bulkRecordOwner();
+      const month=document.getElementById("bulkMonth").value;
+      const accounts=bulkAccountsFor(target);
+      const items=[];
+      accounts.forEach(a=>{
+        const amtEl=document.getElementById(`bulkamt_${a.id}`);
+        if(!amtEl) return;
+        const raw=amtEl.value.trim();
+        if(raw==="") return;
+        const amount=parseMoney(raw);
+        if(isNaN(amount)) return;
+        let rate=1;
+        if(a.currency!=="JPY"){
+          rate=data.rates[a.currency]||1;
+        }
+        items.push({ id:uid("e"), month, owner:recOwner, accountId:a.id, mainCategory:a.mainCategory, assetClass:a.assetClass, type:a.kind, currency:a.currency, rate, amount, memo:"" });
+      });
+      return { items, month, recOwner };
+    }
+    function confirmBulk(){
+      const { items, month, recOwner }=collectBulk();
+      if(!items.length){ toast("保存する金額が入力されていません。"); return; }
+      const totalJPY=items.reduce((s,e)=>s+e.amount*(e.currency==="JPY"?1:e.rate),0);
+      document.getElementById("confirmBody").innerHTML=
+        `<div class="note-box" style="margin-bottom:12px;">${monthLabel(month)} ・ 記録する人：<strong style="color:var(--ink)">${recOwner}</strong><br>${items.length}件を保存します（既存は上書き）。</div>`+
+        items.map(e=>`<div class="meta-row"><span>${accountById(e.accountId).name}</span><strong class="num" style="text-align:right; max-width:60%;">${formatAmount(e.amount,e.currency)}</strong></div>`).join("")+
+        `<div class="meta-row"><span>合計（円換算）</span><strong class="num">${formatJPY(totalJPY)}</strong></div>`;
+      pendingConfirm=()=>commitBulk(items, month);
+      document.getElementById("confirmModal").classList.add("active");
+      document.body.style.overflow="hidden";
+    }
+    function commitBulk(items, month){
+      items.forEach(entry=>{
+        const idx=data.entries.findIndex(x=>x.month===entry.month && x.owner===entry.owner && x.accountId===entry.accountId);
+        if(idx>=0) data.entries[idx]={ ...data.entries[idx], ...entry, id:data.entries[idx].id };
+        else data.entries.push(entry);
+      });
+      activeDashboardMonth=month; activeListMonth=month;
+      closeConfirmModal();
+      save();
+      showTab("list");
+      toast(`${items.length}件を保存しました`);
+    }
+
     function toggleSyncDetails(force){
       const el = document.getElementById("syncDetails");
       const btn = document.getElementById("syncToggleBtn");
@@ -1824,6 +2072,7 @@
     render();
     prefillSyncFields();
     renderSyncStatus();
+    applyPrivacy();
     // collapse sync details if already configured; expand for first-time setup
     toggleSyncDetails(!getSyncConfig());
     // auto-reconnect if previously enabled
