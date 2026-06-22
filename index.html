@@ -263,6 +263,28 @@
     .edit-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:9px; }
     .arch-badge{ font-size:10px; font-weight:700; color:var(--muted); background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:2px 7px; margin-left:8px; }
     .archived-row{ opacity:.62; }
+    .memo-search{ width:100%; }
+    .memo-crumbs{ font-size:12.5px; color:var(--muted); font-weight:600; margin-top:2px; word-break:break-all; }
+    .memo-navrow{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
+    .memo-addsheet{ display:flex; gap:8px; }
+    .memo-addsheet button{ flex:1; font-size:13px; color:var(--primary); background:var(--primary-soft); border:none; border-radius:10px; padding:11px; cursor:pointer; font-weight:600; }
+    .memo-item{ display:flex; align-items:center; gap:10px; padding:13px 6px; border-bottom:1px solid var(--line); border-radius:10px; }
+    .memo-item:last-child{ border-bottom:none; }
+    .memo-item-main{ display:flex; align-items:center; gap:10px; flex:1 1 auto; min-width:0; cursor:pointer; }
+    .memo-ic{ font-size:18px; flex:0 0 auto; }
+    .memo-name{ font-size:15px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .memo-sub{ font-size:11.5px; color:var(--muted); }
+    .memo-chev{ color:var(--faint); font-size:16px; flex:0 0 auto; }
+    .memo-ops{ display:flex; align-items:center; gap:4px; flex:0 0 auto; }
+    .memo-ops button{ width:32px; height:32px; padding:0; border:none; background:var(--bg); border-radius:8px; color:var(--muted); font-size:15px; cursor:pointer; }
+    .memo-ops .memo-del{ color:var(--down); }
+    .memo-note-title{ font-size:19px; font-weight:700; border:none !important; border-bottom:1px solid var(--line) !important; border-radius:0 !important; padding:9px 4px !important; background:transparent !important; }
+    .memo-note-body{ min-height:52vh; resize:vertical; line-height:1.6; }
+    @media (min-width:900px){
+      .app{ max-width:940px; }
+      .tabs-inner{ max-width:940px; }
+      #memo .card{ max-width:720px; margin-left:auto; margin-right:auto; }
+    }
 
     .empty{ text-align:center; color:var(--muted); font-size:13.5px; padding:24px 0; }
     .group-block{ margin-top:14px; }
@@ -440,94 +462,35 @@
       </div>
 
       <!-- INPUT -->
-      <div id="input" class="screen">
-        <section>
-          <div class="card" style="padding:14px 16px;">
-            <div class="form-grid" style="align-items:end;">
-              <label style="font-size:12px;">為替 1 USD = 円<input id="rateUSD" type="number" step="0.01" inputmode="decimal" style="margin-top:5px; padding:10px 12px;" /></label>
-              <label style="font-size:12px;">1 AED = 円（自動）<input id="rateAED" type="number" step="0.01" readonly style="margin-top:5px; padding:10px 12px;" /></label>
+      <div id="memo" class="screen">
+        <section id="memoListScreen">
+          <div class="card stack">
+            <input id="memoSearch" class="memo-search" placeholder="メモを検索" oninput="memoSearchInput(this.value)" />
+            <div id="memoCrumbs" class="memo-crumbs"></div>
+            <div class="memo-navrow">
+              <button id="memoUpBtn" class="ghost tiny-btn" type="button" onclick="memoGoUp()">← 戻る</button>
+              <div style="display:flex; gap:8px;">
+                <button id="memoEditBtn" class="ghost tiny-btn" type="button" onclick="toggleMemoEdit()">編集</button>
+                <button class="soft tiny-btn" type="button" onclick="memoToggleAddSheet()">＋ 追加</button>
+              </div>
             </div>
-            <form id="rateForm"><button type="submit" class="btn-primary" style="margin-top:10px; padding:11px;">為替レートを保存</button></form>
+            <div id="memoAddSheet" class="memo-addsheet" style="display:none;">
+              <button type="button" onclick="memoAddHere('folder')">📁 フォルダを追加</button>
+              <button type="button" onclick="memoAddHere('note')">📝 ノートを追加</button>
+            </div>
+            <div id="memoListBox"></div>
+            <div id="memoEmpty" class="empty" style="display:none;">この中にはまだ何もありません。「＋ 追加」から作成してください。</div>
           </div>
         </section>
 
-        <section>
-          <div class="card">
-            <div class="card-head" style="margin-bottom:14px;">
-              <div>
-                <div class="card-title">月次残高を入力</div>
-                <div class="card-sub">同じ月・所有者・項目に入れると上書き保存します。</div>
-              </div>
+        <section id="memoNoteScreen" style="display:none;">
+          <div class="card stack">
+            <div class="master-title-row">
+              <button class="ghost tiny-btn" type="button" onclick="closeMemoNote()">‹ 戻る</button>
+              <button class="danger tiny-btn" type="button" onclick="deleteMemoNode(memoOpenNoteId)">削除</button>
             </div>
-
-            <form id="entryForm" class="stack">
-              <div class="form-grid">
-                <label>月
-                  <div class="month-picker-wrap">
-                    <button type="button" id="entryMonthButton" class="month-picker-btn" onclick="toggleMonthPicker('entryMonth')">月を選択</button>
-                    <div id="entryMonthPanel" class="month-picker-panel" onclick="event.stopPropagation()"></div>
-                  </div>
-                </label>
-                <label>所有者
-                  <select id="entryOwner">
-                    <option value="全員">全員</option>
-                    <option value="晴太">晴太</option>
-                    <option value="香花">香花</option>
-                  </select>
-                </label>
-              </div>
-
-              <label id="entryRecordOwnerWrap" style="display:none;">記録する人
-                <select id="entryRecordOwner">
-                  <option>晴太</option>
-                  <option>香花</option>
-                </select>
-                <span class="rate-flag">「全員」表示中は、この残高を誰の資産として記録するか選びます。</span>
-              </label>
-
-              <label>種別
-                <select id="entryType">
-                  <option value="asset">資産</option>
-                  <option value="liability">負債</option>
-                </select>
-              </label>
-
-              <label>大項目<select id="entryMainCategory"></select></label>
-              <label>小項目<select id="entryAccount"></select></label>
-
-              <label>資産・負債種類
-                <select id="entryAssetClass">
-                  <option>現金</option>
-                  <option>株式（インデックス）</option>
-                  <option>株式（個別）</option>
-                  <option>外貨</option>
-                  <option>クレジットカード</option>
-                  <option>ローン</option>
-                  <option>その他</option>
-                </select>
-              </label>
-
-              <div class="form-grid">
-                <label>通貨
-                  <select id="entryCurrency">
-                    <option>JPY</option>
-                    <option>AED</option>
-                    <option>USD</option>
-                  </select>
-                </label>
-                <label>金額<input id="entryAmount" type="text" inputmode="decimal" autocomplete="off" required /></label>
-              </div>
-
-              <label id="entryRateWrap" style="display:none;">
-                <span id="entryRateLabel">換算レート（1 USD = 円）</span>
-                <input id="entryRate" type="number" step="0.0001" inputmode="decimal" />
-                <span class="rate-flag">この月の残高を、この円換算レートで記録します（過去はその当時のレートで残ります）。</span>
-              </label>
-
-              <label>メモ<textarea id="entryMemo" placeholder="例：月末残高 / カード請求予定"></textarea></label>
-
-              <button type="submit">保存する</button>
-            </form>
+            <input id="memoNoteTitle" class="memo-note-title" placeholder="タイトル" oninput="updateMemoNoteTitle(this.value)" />
+            <textarea id="memoNoteBody" class="memo-note-body" placeholder="本文を書けます…" oninput="updateMemoNoteBody(this.value)"></textarea>
           </div>
         </section>
       </div>
@@ -580,6 +543,87 @@
 
         <section>
           <div id="bulkList" class="card"></div>
+        </section>
+
+        <section>
+          <div class="card stack">
+            <div class="master-title-row">
+              <div class="card-title">個別入力</div>
+              <button id="singleToggleBtn" class="ghost" type="button" style="width:auto; padding:8px 14px;" onclick="toggleSingleEntry()">開く</button>
+            </div>
+            <div class="card-sub">1項目だけ入れ直したいときに使います。普段は閉じておけます。</div>
+
+            <div id="singleEntryDetails" style="display:none;">
+              <form id="entryForm" class="stack">
+                <div class="form-grid">
+                  <label>月
+                    <div class="month-picker-wrap">
+                      <button type="button" id="entryMonthButton" class="month-picker-btn" onclick="toggleMonthPicker('entryMonth')">月を選択</button>
+                      <div id="entryMonthPanel" class="month-picker-panel" onclick="event.stopPropagation()"></div>
+                    </div>
+                  </label>
+                  <label>所有者
+                    <select id="entryOwner">
+                      <option value="全員">全員</option>
+                      <option value="晴太">晴太</option>
+                      <option value="香花">香花</option>
+                    </select>
+                  </label>
+                </div>
+
+                <label id="entryRecordOwnerWrap" style="display:none;">記録する人
+                  <select id="entryRecordOwner">
+                    <option>晴太</option>
+                    <option>香花</option>
+                  </select>
+                  <span class="rate-flag">「全員」表示中は、この残高を誰の資産として記録するか選びます。</span>
+                </label>
+
+                <label>種別
+                  <select id="entryType">
+                    <option value="asset">資産</option>
+                    <option value="liability">負債</option>
+                  </select>
+                </label>
+
+                <label>大項目<select id="entryMainCategory"></select></label>
+                <label>小項目<select id="entryAccount"></select></label>
+
+                <label>資産・負債種類
+                  <select id="entryAssetClass">
+                    <option>現金</option>
+                    <option>株式（インデックス）</option>
+                    <option>株式（個別）</option>
+                    <option>外貨</option>
+                    <option>クレジットカード</option>
+                    <option>ローン</option>
+                    <option>その他</option>
+                  </select>
+                </label>
+
+                <div class="form-grid">
+                  <label>通貨
+                    <select id="entryCurrency">
+                      <option>JPY</option>
+                      <option>AED</option>
+                      <option>USD</option>
+                    </select>
+                  </label>
+                  <label>金額<input id="entryAmount" type="text" inputmode="decimal" autocomplete="off" /></label>
+                </div>
+
+                <label id="entryRateWrap" style="display:none;">
+                  <span id="entryRateLabel">換算レート（1 USD = 円）</span>
+                  <input id="entryRate" type="number" step="0.0001" inputmode="decimal" />
+                  <span class="rate-flag">この月の残高を、この円換算レートで記録します（過去はその当時のレートで残ります）。</span>
+                </label>
+
+                <label>メモ<textarea id="entryMemo" placeholder="例：月末残高 / カード請求予定"></textarea></label>
+
+                <button type="submit">保存する</button>
+              </form>
+            </div>
+          </div>
         </section>
       </div>
 
@@ -747,10 +791,10 @@
           <svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg><span class="txt">一覧</span>
         </button>
         <button class="tab" data-tab="bulk" onclick="showTab('bulk')">
-          <svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="3" rx="1"/><rect x="4" y="10.5" width="16" height="3" rx="1"/><rect x="4" y="16" width="16" height="3" rx="1"/></svg><span class="txt">一括入力</span>
-        </button>
-        <button class="tab" data-tab="input" onclick="showTab('input')">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg><span class="txt">入力</span>
+        </button>
+        <button class="tab" data-tab="memo" onclick="showTab('memo')">
+          <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 9h7M9 13h7M9 17h4"/></svg><span class="txt">メモ</span>
         </button>
         <button class="tab" data-tab="settings" onclick="showTab('settings')">
           <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></svg><span class="txt">設定</span>
@@ -859,7 +903,8 @@
       mainCategories:[...defaultMain],
       assetClasses:[...defaultAsset],
       accounts: structuredClone(presetAccounts),
-      entries:[]
+      entries:[],
+      memoTree:{ rootIds:[], nodes:{} }
     };
 
     let data = load();
@@ -902,6 +947,9 @@
       });
       loaded.mainCategories = [...new Set([...(loaded.mainCategories || defaultMain), ...defaultMain, ...loaded.accounts.map(a => a.mainCategory).filter(Boolean)])];
       loaded.assetClasses = [...new Set([...(loaded.assetClasses || defaultAsset), ...defaultAsset, ...loaded.accounts.map(a => a.assetClass).filter(Boolean)])];
+      if(!loaded.memoTree || typeof loaded.memoTree!=="object" || !loaded.memoTree.nodes){
+        loaded.memoTree = { rootIds:[], nodes:{} };
+      }
       return loaded;
     }
 
@@ -1148,8 +1196,8 @@
       document.getElementById("usdRateText").textContent = `¥${data.rates.USD}`;
       document.getElementById("aedRateText").textContent = `¥${data.rates.AED}`;
 
-      document.getElementById("rateUSD").value = data.rates.USD;
-      document.getElementById("rateAED").value = data.rates.AED;
+      const ruEl=document.getElementById("rateUSD"); if(ruEl) ruEl.value = data.rates.USD;
+      const raEl=document.getElementById("rateAED"); if(raEl) raEl.value = data.rates.AED;
 
       toggleCurrentButtons();
       renderBackupStatus();
@@ -1159,6 +1207,7 @@
       renderList();
       renderAccountList();
       renderBulk();
+      if(typeof renderMemoTree==="function") renderMemoTree();
     }
 
     function toggleCurrentButtons(){
@@ -1428,8 +1477,8 @@
       document.querySelector(`.tab[data-tab="${id}"]`).classList.add("active");
       const badge=document.getElementById("privateBadge");
       if(badge) badge.style.display = (id==="dashboard") ? "inline-flex" : "none";
-      if(id==="input"){ if(!activeEntryMonth) activeEntryMonth=latestSelectableMonth(); renderMonthPicker("entryMonth"); }
-      if(id==="bulk"){ if(!activeBulkMonth) activeBulkMonth=latestSelectableMonth(); }
+      if(id==="bulk"){ if(!activeBulkMonth) activeBulkMonth=latestSelectableMonth(); if(!activeEntryMonth) activeEntryMonth=latestSelectableMonth(); renderMonthPicker("entryMonth"); }
+      if(id==="memo"){ renderMemo(); }
       window.scrollTo({top:0, behavior:"smooth"});
       render();
     }
@@ -1591,7 +1640,8 @@
       save();
     });
 
-    document.getElementById("rateForm").addEventListener("submit",(e)=>{
+    const rateFormEl=document.getElementById("rateForm");
+    if(rateFormEl) rateFormEl.addEventListener("submit",(e)=>{
       e.preventDefault();
       data.rates.USD=Number(document.getElementById("rateUSD").value)||data.rates.USD;
       data.rates.AED=Number((data.rates.USD/AED_PER_USD).toFixed(2));
@@ -1604,10 +1654,12 @@
     function toggleMasterEditMode(){ masterEditMode=!masterEditMode; reorderState=null; renderAccountList(); }
     function moveItemInArray(arr,from,to){ if(from<0||to<0||from===to) return arr; const c=arr.slice(); const [it]=c.splice(from,1); c.splice(to,0,it); return c; }
     function startReorder(event,kind,value,parent=""){
-      if(!masterEditMode) return;
+      const gate = kind==="memo" ? memoEditMode : masterEditMode;
+      if(!gate) return;
       event.preventDefault(); event.stopPropagation();
       reorderState={ kind, value, parent };
       document.body.style.userSelect="none";
+      const rerender = ()=> (kind==="memo" ? renderMemo() : renderAccountList());
       const liftCurrent=()=>{
         document.querySelectorAll(".reorder-lift").forEach(el=>el.classList.remove("reorder-lift"));
         const row=document.querySelector(`.reorder-row[data-reorder-kind="${kind}"][data-reorder-value="${value}"]`);
@@ -1634,8 +1686,13 @@
               const fromIdx=data.assetClasses.indexOf(value);
               const toIdx=data.assetClasses.indexOf(targetValue);
               data.assetClasses=moveItemInArray(data.assetClasses,fromIdx,toIdx);
+            } else if(kind==="memo"){
+              const arr=memoSiblings(memoCwd).slice();
+              const fromIdx=arr.indexOf(value);
+              const toIdx=arr.indexOf(targetValue);
+              if(fromIdx>=0&&toIdx>=0) memoSetSiblings(memoCwd, moveItemInArray(arr,fromIdx,toIdx));
             }
-            renderAccountList();
+            rerender();
           }
         }
         liftCurrent();
@@ -2217,6 +2274,156 @@
     }
     document.getElementById("bulkOwner").addEventListener("change", renderBulk);
     document.getElementById("bulkRecordOwner").addEventListener("change", renderBulk);
+
+    function toggleSingleEntry(force){
+      const el=document.getElementById("singleEntryDetails");
+      const btn=document.getElementById("singleToggleBtn");
+      if(!el) return;
+      const open=(typeof force==="boolean")?force:(el.style.display==="none");
+      el.style.display=open?"block":"none";
+      if(btn) btn.textContent=open?"閉じる":"開く";
+      if(open) fillSelects();
+    }
+
+    /* ---------- memo: Sprout-style filer (folders/notes), synced via data.memoTree ---------- */
+    let memoEditMode=false;
+    let memoOpenNoteId=null;
+    let memoCwd=null;          // current folder id (null = root)
+    let memoSearchText="";
+    function memoTree(){ if(!data.memoTree||!data.memoTree.nodes) data.memoTree={rootIds:[],nodes:{}}; return data.memoTree; }
+    function memoNode(id){ return memoTree().nodes[id]; }
+    function memoSiblings(parentId){ return parentId? (memoNode(parentId)?.childIds||[]) : memoTree().rootIds; }
+    function memoSetSiblings(parentId, arr){ if(parentId){ if(memoNode(parentId)) memoNode(parentId).childIds=arr; } else { memoTree().rootIds=arr; } }
+    function memoUid(){ return "n_"+Math.random().toString(36).slice(2,9); }
+
+    function addMemoNode(type, parentId){
+      const t=memoTree();
+      const node={ id:memoUid(), type, name: type==="folder"?"新しいフォルダ":"新しいノート", parentId:parentId||null };
+      if(type==="folder"){ node.childIds=[]; } else { node.body=""; }
+      t.nodes[node.id]=node;
+      const arr=memoSiblings(parentId); arr.push(node.id); memoSetSiblings(parentId, arr);
+      save();
+      if(type==="note"){ openMemoNote(node.id); }
+      else { renderMemo(); renameMemoNode(node.id, true); }
+      return node.id;
+    }
+    function memoToggleAddSheet(){ const s=document.getElementById("memoAddSheet"); if(s) s.style.display = s.style.display==="none"?"flex":"none"; }
+    function memoAddHere(type){ const s=document.getElementById("memoAddSheet"); if(s) s.style.display="none"; addMemoNode(type, memoCwd); }
+
+    function renameMemoNode(id, isNew){
+      const n=memoNode(id); if(!n) return;
+      const name=prompt(n.type==="folder"?"フォルダ名":"ノートのタイトル", isNew?"":n.name);
+      if(name===null){ return; }
+      n.name=name.trim()||n.name; save();
+      if(memoOpenNoteId===id){ const t=document.getElementById("memoNoteTitle"); if(t) t.value=n.name; }
+      renderMemo();
+    }
+    function deleteMemoNode(id){
+      const n=memoNode(id); if(!n) return;
+      const hasChildren=n.type==="folder" && (n.childIds||[]).length;
+      if(!confirm(`「${n.name}」を削除しますか？${hasChildren?"中のフォルダ・ノートもすべて削除されます。":""}`)) return;
+      const toDelete=[];
+      (function collect(x){ toDelete.push(x); const node=memoNode(x); if(node&&node.childIds) node.childIds.forEach(collect); })(id);
+      const arr=memoSiblings(n.parentId).filter(x=>x!==id); memoSetSiblings(n.parentId, arr);
+      toDelete.forEach(x=>{ delete memoTree().nodes[x]; });
+      if(toDelete.includes(memoOpenNoteId)){ memoOpenNoteId=null; }
+      save();
+      closeMemoNote(); // back to list (also re-renders)
+    }
+    function moveMemoNode(id, dir){
+      const n=memoNode(id); if(!n) return;
+      const arr=memoSiblings(n.parentId).slice();
+      const i=arr.indexOf(id); const j=i+dir;
+      if(i<0||j<0||j>=arr.length) return;
+      [arr[i],arr[j]]=[arr[j],arr[i]]; memoSetSiblings(n.parentId, arr);
+      save(); renderMemo();
+    }
+
+    function memoPath(id){ // array of folder nodes from root to the folder `id`
+      const path=[]; let cur=id;
+      while(cur){ const n=memoNode(cur); if(!n) break; path.unshift(n); cur=n.parentId; }
+      return path;
+    }
+    function enterMemoFolder(id){ memoCwd=id; memoSearchText=""; const s=document.getElementById("memoSearch"); if(s) s.value=""; renderMemo(); }
+    function memoGoUp(){ if(memoCwd==null) return; const n=memoNode(memoCwd); memoCwd=n?n.parentId:null; renderMemo(); }
+    function memoSearchInput(val){ memoSearchText=(val||"").trim(); renderMemo(); }
+
+    function toggleMemoEdit(){ memoEditMode=!memoEditMode; const b=document.getElementById("memoEditBtn"); if(b){ b.textContent=memoEditMode?"完了":"編集"; b.className=memoEditMode?"soft tiny-btn":"ghost tiny-btn"; } renderMemo(); }
+
+    function memoItemHtml(n, opts={}){
+      const isFolder=n.type==="folder";
+      const icon=isFolder?"📁":"📝";
+      const count=isFolder?`${(n.childIds||[]).length}件`:"";
+      const sub=opts.pathLabel?`<div class="memo-sub">${opts.pathLabel}</div>`:(count?`<div class="memo-sub">${count}</div>`:"");
+      const click = isFolder ? `onclick="enterMemoFolder('${n.id}')"` : `onclick="openMemoNote('${n.id}')"`;
+      const ops = memoEditMode ? `<div class="memo-ops">
+          <button type="button" onclick="event.stopPropagation();renameMemoNode('${n.id}')" aria-label="名前変更">✎</button>
+          <button type="button" class="memo-del" onclick="event.stopPropagation();deleteMemoNode('${n.id}')" aria-label="削除">×</button>
+          <span class="edit-handle" onpointerdown="startReorder(event,'memo','${n.id}')">⠿</span>
+        </div>` : `<span class="memo-chev">›</span>`;
+      return `<div class="memo-item reorder-row" data-reorder-kind="memo" data-reorder-value="${n.id}">
+        <div class="memo-item-main" ${click}><span class="memo-ic">${icon}</span>
+          <div style="min-width:0;"><div class="memo-name">${(n.name||"").replace(/</g,"&lt;")}</div>${sub}</div>
+        </div>
+        ${ops}
+      </div>`;
+    }
+
+    function renderMemo(){
+      const listScreen=document.getElementById("memoListScreen");
+      const noteScreen=document.getElementById("memoNoteScreen");
+      if(!listScreen) return;
+      // note view visibility
+      if(memoOpenNoteId && memoNode(memoOpenNoteId)){
+        listScreen.style.display="none"; noteScreen.style.display="block";
+      } else {
+        listScreen.style.display="block"; noteScreen.style.display="none";
+        memoOpenNoteId=null;
+      }
+
+      const box=document.getElementById("memoListBox");
+      const emptyEl=document.getElementById("memoEmpty");
+      const crumbs=document.getElementById("memoCrumbs");
+      const upBtn=document.getElementById("memoUpBtn");
+
+      if(memoSearchText){
+        // flat search across all nodes by name
+        crumbs.textContent=`検索結果：「${memoSearchText}」`;
+        upBtn.disabled=true; upBtn.style.opacity=".4";
+        const q=memoSearchText.toLowerCase();
+        const results=Object.values(memoTree().nodes).filter(n=>(n.name||"").toLowerCase().includes(q));
+        emptyEl.style.display=results.length?"none":"block";
+        emptyEl.textContent="該当するメモがありません。";
+        box.innerHTML=results.map(n=>{
+          const path=memoPath(n.parentId).map(p=>p.name).join(" › ")||"ノート";
+          return memoItemHtml(n, { pathLabel:path });
+        }).join("");
+        return;
+      }
+
+      // breadcrumb
+      const path=memoPath(memoCwd);
+      crumbs.textContent=["ノート", ...path.map(p=>p.name)].join(" › ");
+      upBtn.disabled=(memoCwd==null); upBtn.style.opacity=(memoCwd==null)?".4":"1";
+
+      const childIds=memoSiblings(memoCwd);
+      emptyEl.textContent="この中にはまだ何もありません。「＋ 追加」から作成してください。";
+      emptyEl.style.display=childIds.length?"none":"block";
+      box.innerHTML=childIds.map(memoNode).filter(Boolean).map(n=>memoItemHtml(n)).join("");
+    }
+
+    function openMemoNote(id){
+      const n=memoNode(id); if(!n||n.type!=="note") return;
+      memoOpenNoteId=id;
+      document.getElementById("memoNoteTitle").value=n.name||"";
+      document.getElementById("memoNoteBody").value=n.body||"";
+      renderMemo();
+      window.scrollTo({top:0,behavior:"smooth"});
+    }
+    function closeMemoNote(){ memoOpenNoteId=null; renderMemo(); }
+    function updateMemoNoteTitle(val){ const n=memoNode(memoOpenNoteId); if(n){ n.name=val; save(); } }
+    function updateMemoNoteBody(val){ const n=memoNode(memoOpenNoteId); if(n){ n.body=val; save(); } }
+    function renderMemoTree(){ renderMemo(); } // keep render() hook name compatible
 
     function collectBulk(){
       const target=document.getElementById("bulkOwner").value;
