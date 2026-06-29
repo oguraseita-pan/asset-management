@@ -2242,9 +2242,9 @@
         if(!last) return "";
         if(last.savedAt && /^\d{4}-\d{2}-\d{2}$/.test(last.savedAt)){
           const [y,m,d]=last.savedAt.split("-").map(Number);
-          return `前回入力 ${y}年${m}月${d}日`;
+          return `前回 ${y}年${m}月${d}日`;
         }
-        return `前回入力 ${monthLabel(last.month)}`;
+        return `前回 ${monthLabel(last.month)}`;
       }
       function rowFor(a){
         const last=lastFor(a.id);
@@ -2440,7 +2440,9 @@
       const recOwner=bulkRecordOwner();
       const month=selectedBulkMonth();
       const accounts=bulkAccountsFor(target);
-      const items=[];
+      const snapshot=snapshotEntriesUpTo(month, recOwner);
+      const lastFor=(id)=> snapshot.find(e=>e.accountId===id);
+      const items=[]; let skipped=0;
       accounts.forEach(a=>{
         const amtEl=document.getElementById(`bulkamt_${a.id}`);
         if(!amtEl) return;
@@ -2448,22 +2450,23 @@
         if(raw==="") return;
         const amount=parseMoney(raw);
         if(isNaN(amount)) return;
+        // only update rows the user actually changed; leave unchanged rows (and their date) as-is
+        const last=lastFor(a.id);
+        if(last && Math.abs(amount - Number(last.amount)) < 0.005){ skipped++; return; }
         let rate=1;
-        if(a.currency!=="JPY"){
-          rate=data.rates[a.currency]||1;
-        }
+        if(a.currency!=="JPY"){ rate=data.rates[a.currency]||1; }
         items.push({ id:uid("e"), month, owner:recOwner, accountId:a.id, mainCategory:a.mainCategory, assetClass:a.assetClass, type:a.kind, currency:a.currency, rate, amount, memo:"", savedAt:todayStr() });
       });
-      return { items, month, recOwner };
+      return { items, month, recOwner, skipped };
     }
     function confirmBulk(){
-      const { items, month, recOwner }=collectBulk();
-      if(!items.length){ toast("保存する金額が入力されていません。"); return; }
+      const { items, month, recOwner, skipped }=collectBulk();
+      if(!items.length){ toast(skipped?"変更された項目はありません。":"保存する金額が入力されていません。"); return; }
       const totalJPY=items.reduce((s,e)=>s+e.amount*(e.currency==="JPY"?1:e.rate),0);
       document.getElementById("confirmBody").innerHTML=
-        `<div class="note-box" style="margin-bottom:12px;">${monthLabel(month)} ・ 記録する人：<strong style="color:var(--ink)">${recOwner}</strong><br>${items.length}件を保存します（既存は上書き）。</div>`+
+        `<div class="note-box" style="margin-bottom:12px;">${monthLabel(month)} ・ 記録する人：<strong style="color:var(--ink)">${recOwner}</strong><br>変更された${items.length}件を保存します（既存は上書き）。${skipped?`<br>変更のない${skipped}件はそのままです。`:""}</div>`+
         items.map(e=>`<div class="meta-row"><span>${accountById(e.accountId).name}</span><strong class="num" style="text-align:right; max-width:60%;">${formatAmount(e.amount,e.currency)}</strong></div>`).join("")+
-        `<div class="meta-row"><span>合計（円換算）</span><strong class="num">${formatJPY(totalJPY)}</strong></div>`;
+        `<div class="meta-row"><span>変更分の合計（円換算）</span><strong class="num">${formatJPY(totalJPY)}</strong></div>`;
       pendingConfirm=()=>commitBulk(items, month);
       document.getElementById("confirmModal").classList.add("active");
       document.body.style.overflow="hidden";
