@@ -964,9 +964,47 @@
     }
 
     function save(){
+      data.updatedAt = Date.now();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
       render();
       pushToCloud(false);
+    }
+
+    // Merge two full states record-by-record so concurrent edits on different devices
+    // don't clobber each other. Newer record (by ts) wins; items present on only one side are kept.
+    function mergeStates(localD, remoteD){
+      const merged = JSON.parse(JSON.stringify(remoteD));
+      let localContributed = false;
+      const localNewer = (localD.updatedAt||0) > (remoteD.updatedAt||0);
+      const unionOrder = (a=[], b=[])=>{ const out=[...a]; b.forEach(x=>{ if(!out.includes(x)) out.push(x); }); return out; };
+
+      // categories: union so nothing added disappears
+      merged.mainCategories = localNewer ? unionOrder(localD.mainCategories, remoteD.mainCategories) : unionOrder(remoteD.mainCategories, localD.mainCategories);
+      merged.assetClasses   = localNewer ? unionOrder(localD.assetClasses,   remoteD.assetClasses)   : unionOrder(remoteD.assetClasses,   localD.assetClasses);
+
+      // rates / meta / memo: take from the newer overall state (whole-field)
+      if(localNewer){ merged.rates=localD.rates; merged.meta=localD.meta; merged.memoTree=localD.memoTree; localContributed=true; }
+      else { merged.rates=remoteD.rates; merged.meta=remoteD.meta; merged.memoTree=remoteD.memoTree; }
+
+      // accounts by id: higher ts wins; keep union; order from newer side then extras
+      const accMap=new Map();
+      (remoteD.accounts||[]).forEach(a=>accMap.set(a.id,a));
+      (localD.accounts||[]).forEach(a=>{ const r=accMap.get(a.id); if(!r){ accMap.set(a.id,a); localContributed=true; } else if((a.ts||0)>(r.ts||0)){ accMap.set(a.id,a); localContributed=true; } });
+      const orderSrc = (localNewer ? localD.accounts : remoteD.accounts) || [];
+      const ordered=[]; const seen=new Set();
+      orderSrc.forEach(a=>{ if(accMap.has(a.id)){ ordered.push(accMap.get(a.id)); seen.add(a.id); } });
+      [...accMap.values()].forEach(a=>{ if(!seen.has(a.id)){ ordered.push(a); seen.add(a.id); } });
+      merged.accounts=ordered;
+
+      // entries by month|owner|accountId: higher ts wins; union
+      const key=e=>`${e.month}|${e.owner}|${e.accountId}`;
+      const entMap=new Map();
+      (remoteD.entries||[]).forEach(e=>entMap.set(key(e),e));
+      (localD.entries||[]).forEach(e=>{ const k=key(e); const r=entMap.get(k); if(!r){ entMap.set(k,e); localContributed=true; } else if((e.ts||0)>(r.ts||0)){ entMap.set(k,e); localContributed=true; } });
+      merged.entries=[...entMap.values()];
+
+      merged.updatedAt = Math.max(localD.updatedAt||0, remoteD.updatedAt||0);
+      return { merged, localContributed };
     }
 
     /* ---------- helpers ---------- */
@@ -1607,6 +1645,7 @@
     function commitEntry(){
       if(!pendingEntry) return;
       const entry=pendingEntry;
+      entry.ts=Date.now();
       const idx=data.entries.findIndex(x=>x.month===entry.month && x.owner===entry.owner && x.accountId===entry.accountId);
       if(idx>=0) data.entries[idx]={ ...data.entries[idx], ...entry, id:data.entries[idx].id };
       else data.entries.push(entry);
@@ -1633,7 +1672,7 @@
       data.assetClasses=[...new Set([...(data.assetClasses||[]), assetClass])];
       const ownerSel=document.getElementById("accountOwners").value;
       const owners = ownerSel==="both" ? ["晴太","香花"] : [ownerSel];
-      const reg={ id:uid("acc"), kind, mainCategory, name, assetClass, currency:document.getElementById("accountCurrency").value, owners };
+      const reg={ id:uid("acc"), kind, mainCategory, name, assetClass, currency:document.getElementById("accountCurrency").value, owners, ts:Date.now() };
       data.accounts.push(reg);
       const success=document.getElementById("registrationSuccess");
       success.style.display="block";
@@ -1723,13 +1762,13 @@
     function setAccountOwners(id, value){
       const acc=data.accounts.find(a=>a.id===id);
       if(!acc) return;
-      acc.owners = value==="both" ? ["晴太","香花"] : [value];
+      acc.owners = value==="both" ? ["晴太","香花"] : [value]; acc.ts=Date.now();
       save();
     }
     function toggleArchiveAccount(id){
       const acc=accountById(id);
       if(!acc) return;
-      acc.archived=!acc.archived;
+      acc.archived=!acc.archived; acc.ts=Date.now();
       save();
       toast(acc.archived?`「${acc.name}」をアーカイブしました`:`「${acc.name}」を戻しました`);
     }
@@ -1798,9 +1837,9 @@
       if(!data.mainCategories.includes(mainCategory)) data.mainCategories.push(mainCategory);
       if(!data.assetClasses.includes(assetClass)) data.assetClasses.push(assetClass);
       // update account (same id -> entries stay linked)
-      acc.kind=kind; acc.mainCategory=mainCategory; acc.name=name; acc.owners=owners; acc.assetClass=assetClass; acc.currency=currency;
+      acc.kind=kind; acc.mainCategory=mainCategory; acc.name=name; acc.owners=owners; acc.assetClass=assetClass; acc.currency=currency; acc.ts=Date.now();
       // propagate organizational labels to existing entries (NOT currency/amount/rate)
-      data.entries.forEach(e=>{ if(e.accountId===acc.id){ e.mainCategory=mainCategory; e.assetClass=assetClass; e.type=kind; } });
+      data.entries.forEach(e=>{ if(e.accountId===acc.id){ e.mainCategory=mainCategory; e.assetClass=assetClass; e.type=kind; e.ts=Date.now(); } });
       closeEditAccount();
       save();
       toast("項目を更新しました");
@@ -2136,18 +2175,27 @@
             return;
           }
           const remote = snap.data();
-          if(!remote || remote.writerId === clientId()) return; // ignore own echo
+          if(!remote) return;
           let payload;
           try{ payload = JSON.parse(remote.data); }catch(e){ return; }
           if(!payload || !Array.isArray(payload.entries)) return;
+          if(remote.writerId === clientId()){
+            // our own echo — only act if local has unpushed newer edits (e.g. made offline)
+            if((data.updatedAt||0) > (remote.updatedAt||0)) pushToCloud(true);
+            return;
+          }
           syncState.applyingRemote = true;
-          data = normalize(payload);
+          const remoteD = normalize(payload);
+          const { merged, localContributed } = mergeStates(data, remoteD);
+          data = merged;
           localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
           activeDashboardMonth = latestSelectableMonth();
           activeListMonth = latestSelectableMonth();
           render();
           syncState.applyingRemote = false;
-          toast("相手の変更を反映しました");
+          // if our local had newer records than remote, push the merged result so all devices converge
+          if(localContributed) pushToCloud(true);
+          toast("同期しました");
         }, (err)=>{
           syncState.connected = false;
           syncState.connecting = false;
@@ -2160,7 +2208,8 @@
         renderSyncStatus();
         renderSyncBanner();
         if(fromButton){ toast("同期を開始しました"); toggleSyncDetails(false); }
-        pushToCloud(false); // push current local state up on connect
+        // NOTE: do not push local up on connect — the first snapshot merges remote+local,
+        // and pushes back only if local has newer records (prevents stale device from clobbering).
       }catch(err){
         syncState.connected = false;
         syncState.connecting = false;
@@ -2473,6 +2522,7 @@
     }
     function commitBulk(items, month){
       items.forEach(entry=>{
+        entry.ts=Date.now();
         const idx=data.entries.findIndex(x=>x.month===entry.month && x.owner===entry.owner && x.accountId===entry.accountId);
         if(idx>=0) data.entries[idx]={ ...data.entries[idx], ...entry, id:data.entries[idx].id };
         else data.entries.push(entry);
