@@ -241,6 +241,12 @@
     .legend{ width:100%; margin-top:16px; display:flex; flex-direction:column; gap:8px; }
     .legend-item{ display:flex; align-items:center; font-size:13px; color:var(--ink); justify-content:space-between; }
     .legend-item .lab{ display:flex; align-items:center; gap:8px; }
+    .pie-legend-btn{ display:flex; align-items:center; justify-content:space-between; flex:1; gap:12px; min-width:0; border:0; border-radius:8px; background:transparent; color:var(--ink); padding:8px 6px; text-align:left; font-size:13px; cursor:pointer; }
+    .pie-legend-btn[aria-pressed="true"]{ background:var(--primary-soft); color:var(--primary); font-weight:700; }
+    .pie-legend-btn .lab{ min-width:0; overflow-wrap:anywhere; }
+    .pie-trend-btn{ border:0; background:var(--bg); color:var(--primary); border-radius:8px; padding:8px; font-size:12px; white-space:nowrap; cursor:pointer; }
+    .donut-stage{ cursor:pointer; touch-action:manipulation; }
+    .donut-stage:focus-visible, .pie-legend-btn:focus-visible{ outline:2px solid var(--primary); outline-offset:3px; }
     .swatch{ width:11px; height:11px; border-radius:3px; display:inline-block; }
     .tap-hint{ font-size:11px; color:var(--faint); margin-top:10px; text-align:center; }
 
@@ -407,7 +413,7 @@
             <div id="pieCardWrap" class="card tap-card" onclick="openChartModal('pie')">
               <div class="section-title">資産の種類別割合</div>
               <div id="pieCard" style="margin-top:12px;"></div>
-              <div class="tap-hint">タップで拡大・種類別の推移</div>
+              <div class="tap-hint">項目をタップで金額表示・余白をタップで拡大</div>
             </div>
 
             <div class="card">
@@ -762,6 +768,7 @@
               <div class="filters">
                 <button class="soft" type="button" onclick="connectSync(true)">接続して同期を開始</button>
                 <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="disconnectSync()">同期を解除</button>
+                <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="downloadSyncRecovery()">端末の退避データをダウンロード</button>
               </div>
 
               <div class="note-box">
@@ -958,8 +965,22 @@
       const migrationKeys = [STORAGE_KEY, "ogura-family-finance-v15","ogura-family-finance-v14","ogura-family-finance-v13","ogura-family-finance-v12","ogura-family-finance-v11","ogura-family-finance-v10","ogura-family-finance-v9","ogura-family-finance-v8"];
       let saved = null;
       for(const key of migrationKeys){ saved = localStorage.getItem(key); if(saved) break; }
-      const loaded = saved ? normalize(JSON.parse(saved)) : structuredClone(defaultData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(loaded));
+      let loaded;
+      try{
+        const parsed=saved?JSON.parse(saved):structuredClone(defaultData);
+        if(!parsed||typeof parsed!=="object"||!Array.isArray(parsed.entries)||!Array.isArray(parsed.accounts)){
+          throw Error("invalid stored data");
+        }
+        loaded=normalize(parsed);
+      }catch(err){
+        // Keep a copy of the damaged payload rather than silently destroying it.
+        if(saved){
+          try{ localStorage.setItem(STORAGE_KEY+"-invalid-backup",saved); }catch(e){}
+        }
+        loaded=structuredClone(defaultData);
+        console.warn("Local finance data could not be loaded. Original was preserved for recovery.",err);
+      }
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(loaded));
       return loaded;
     }
 
@@ -970,41 +991,47 @@
       pushToCloud(false);
     }
 
-    // Merge two full states record-by-record so concurrent edits on different devices
-    // don't clobber each other. Newer record (by ts) wins; items present on only one side are kept.
-    function mergeStates(localD, remoteD){
-      const merged = JSON.parse(JSON.stringify(remoteD));
-      let localContributed = false;
-      const localNewer = (localD.updatedAt||0) > (remoteD.updatedAt||0);
-      const unionOrder = (a=[], b=[])=>{ const out=[...a]; b.forEach(x=>{ if(!out.includes(x)) out.push(x); }); return out; };
 
-      // categories: union so nothing added disappears
-      merged.mainCategories = localNewer ? unionOrder(localD.mainCategories, remoteD.mainCategories) : unionOrder(remoteD.mainCategories, localD.mainCategories);
-      merged.assetClasses   = localNewer ? unionOrder(localD.assetClasses,   remoteD.assetClasses)   : unionOrder(remoteD.assetClasses,   localD.assetClasses);
-
-      // rates / meta / memo: take from the newer overall state (whole-field)
-      if(localNewer){ merged.rates=localD.rates; merged.meta=localD.meta; merged.memoTree=localD.memoTree; localContributed=true; }
-      else { merged.rates=remoteD.rates; merged.meta=remoteD.meta; merged.memoTree=remoteD.memoTree; }
-
-      // accounts by id: higher ts wins; keep union; order from newer side then extras
-      const accMap=new Map();
-      (remoteD.accounts||[]).forEach(a=>accMap.set(a.id,a));
-      (localD.accounts||[]).forEach(a=>{ const r=accMap.get(a.id); if(!r){ accMap.set(a.id,a); localContributed=true; } else if((a.ts||0)>(r.ts||0)){ accMap.set(a.id,a); localContributed=true; } });
-      const orderSrc = (localNewer ? localD.accounts : remoteD.accounts) || [];
-      const ordered=[]; const seen=new Set();
-      orderSrc.forEach(a=>{ if(accMap.has(a.id)){ ordered.push(accMap.get(a.id)); seen.add(a.id); } });
-      [...accMap.values()].forEach(a=>{ if(!seen.has(a.id)){ ordered.push(a); seen.add(a.id); } });
-      merged.accounts=ordered;
-
-      // entries by month|owner|accountId: higher ts wins; union
-      const key=e=>`${e.month}|${e.owner}|${e.accountId}`;
-      const entMap=new Map();
-      (remoteD.entries||[]).forEach(e=>entMap.set(key(e),e));
-      (localD.entries||[]).forEach(e=>{ const k=key(e); const r=entMap.get(k); if(!r){ entMap.set(k,e); localContributed=true; } else if((e.ts||0)>(r.ts||0)){ entMap.set(k,e); localContributed=true; } });
-      merged.entries=[...entMap.values()];
-
-      merged.updatedAt = Math.max(localD.updatedAt||0, remoteD.updatedAt||0);
-      return { merged, localContributed };
+    // Rebase ONLY actual edits made on this device against the latest server state.
+    // Untouched old local records must never be reintroduced into the cloud.
+    // Deletions are intentional operations, not missing data to resurrect.
+    function rebaseUserChanges(base, localD, remoteD){
+      const clone=v=>JSON.parse(JSON.stringify(v));
+      const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+      const merged=clone(remoteD);
+      const conflicts=[];
+      const keyForEntry=e=>[e.month,e.owner,e.accountId].join('|');
+      function rebaseRecords(field, keyFor){
+        const before=new Map((base[field]||[]).map(x=>[keyFor(x),x]));
+        const after=new Map((localD[field]||[]).map(x=>[keyFor(x),x]));
+        const server=new Map((remoteD[field]||[]).map(x=>[keyFor(x),x]));
+        for(const key of new Set([...before.keys(),...after.keys()])){
+          const oldItem=before.get(key), newItem=after.get(key), serverItem=server.get(key);
+          if(same(oldItem,newItem)) continue;
+          // Concurrent change to the same item: stop rather than silently lose a family's edit.
+          if(!same(oldItem,serverItem) && !same(newItem,serverItem)){
+            conflicts.push(field+':'+key);
+            continue;
+          }
+          if(after.has(key)) server.set(key,clone(newItem));
+          else server.delete(key);
+        }
+        merged[field]=[...server.values()];
+      }
+      rebaseRecords('accounts',a=>a.id);
+      rebaseRecords('entries',keyForEntry);
+      const removedAccounts=new Set((base.accounts||[]).filter(a=>!(localD.accounts||[]).some(b=>a.id===b.id)).map(a=>a.id));
+      if(removedAccounts.size) merged.entries=merged.entries.filter(e=>!removedAccounts.has(e.accountId));
+      for(const field of ['rates','meta','mainCategories','assetClasses','memoTree']){
+        if(same(base[field],localD[field])) continue;
+        if(!same(base[field],remoteD[field]) && !same(localD[field],remoteD[field])){
+          conflicts.push(field);
+          continue;
+        }
+        merged[field]=clone(localD[field]);
+      }
+      merged.updatedAt=Date.now();
+      return { merged:normalize(merged), conflicts };
     }
 
     /* ---------- helpers ---------- */
@@ -1277,7 +1304,9 @@
     function createAreaSVG(series, width=460, height=220){
       const pad={top:16,right:14,bottom:28,left:46};
       const innerW=width-pad.left-pad.right, innerH=height-pad.top-pad.bottom;
-      const maxVal=Math.max(...series.map(s=>s.value),1), minVal=0;
+      const values=series.map(point=>Number(point.value)||0);
+      const minVal=Math.min(0,...values);
+      const maxVal=Math.max(1,...values,minVal+1);
       const gridVals=Array.from({length:5},(_,i)=>minVal+(maxVal-minVal)*(4-i)/4);
       const pts=series.map((s,i)=>{
         const x=pad.left+(series.length===1?innerW/2:innerW*i/(series.length-1));
@@ -1318,24 +1347,32 @@
       document.querySelectorAll("#dashboard .range-tab").forEach(b=>b.classList.toggle("active", map[b.textContent]===areaRange));
     }
 
+
     const PIE_PALETTE = ["#2f5bd0","#4f9d7a","#6aa9c9","#c98a5a","#8e7cc3","#d1657a","#5aa0a0","#b6c2dd","#a0a86a","#cfd5df"];
+    const pieChartCache = new Map();
+    function escapePieLabel(value){
+      return String(value).replace(/[&<>"']/g, function(ch){
+        return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
+      });
+    }
     function pieDataFor(month, owner){
       const entries=totalsForSnapshot(month, owner).entries.filter(e=>e.type==="asset");
-      const byClass={};
+      const byClass=Object.create(null); // user-created class names must not collide with object prototype keys
       entries.forEach(e=>{ byClass[e.assetClass]=(byClass[e.assetClass]||0)+toJPY(e); });
       const total=Object.values(byClass).reduce((s,v)=>s+v,0);
-      if(!total) return { rows:[], total:0 };
-      // keep classes >= 1%, lump the rest into その他
-      const big=[]; let otherSum=0;
+      if(total<=0) return { rows:[], total:0 };
+      const big=[]; let otherSum=0, otherClasses=[];
       Object.keys(byClass).forEach(k=>{
         const amt=byClass[k];
-        if((amt/total)*100 >= 1) big.push({ label:k, amount:amt });
-        else otherSum+=amt;
+        if(amt<=0) return;
+        if((amt/total)*100 >= 1) big.push({ label:k, amount:amt, classes:[k] });
+        else { otherSum+=amt; otherClasses.push(k); }
       });
       big.sort((a,b)=>b.amount-a.amount);
       if(otherSum>0){
         const existing=big.find(r=>r.label==="その他");
-        if(existing) existing.amount+=otherSum; else big.push({ label:"その他", amount:otherSum });
+        if(existing){ existing.amount+=otherSum; existing.classes.push(...otherClasses); }
+        else big.push({ label:"その他", amount:otherSum, classes:otherClasses });
       }
       const rows=big.map((r,i)=>({ ...r, color:PIE_PALETTE[i % PIE_PALETTE.length] }));
       return { rows, total };
@@ -1344,29 +1381,80 @@
 
     function renderPieCard(targetId="pieCard", opts={}){
       const target=document.getElementById(targetId);
+      if(!target) return;
       const month=opts.month || selectedDashboardMonth();
       const owner=opts.owner || selectedDashboardOwner();
       const interactive=!!opts.interactive;
       const { rows, total }=pieDataFor(month, owner);
-      if(!rows.length){ target.innerHTML=`<div class="empty">資産データがありません</div>`; return; }
+      if(!rows.length){ pieChartCache.delete(targetId); target.innerHTML='<div class="empty">資産データがありません</div>'; return; }
       let deg=0;
-      const chartRows=rows.map(r=>{ const start=deg; const pct=total?(r.amount/total)*100:0; deg+=(r.amount/total)*360; return {...r,pct,start,end:deg}; });
-      const gradient=chartRows.map(r=>`${r.color} ${r.start}deg ${r.end}deg`).join(", ");
-      const legend=chartRows.map(r=>{
-        const click = interactive ? ` class="legend-item tap-row" style="cursor:pointer;" onclick="showClassTrend('${r.label.replace(/'/g,"\\'")}','${owner}')"` : ` class="legend-item"`;
-        const arrow = interactive ? ` <span style="color:var(--faint);">›</span>` : "";
-        return `<div${click}><span class="lab"><span class="swatch" style="background:${r.color}"></span>${r.label}</span><span class="num">${r.pct.toFixed(1)}%${arrow}</span></div>`;
-      }).join("");
-      target.innerHTML=`
-        <div class="donut-layout">
-          <div class="donut-stage">
-            <div class="donut" style="background:conic-gradient(${gradient});">
-              <div class="donut-center"><div class="label">資産合計</div><div class="value num">${formatJPY(total).replace("¥","")}円</div></div>
-            </div>
-          </div>
-          <div class="legend">${legend}</div>
-          ${interactive?`<div class="tap-hint">種類をタップで推移を表示</div>`:""}
-        </div>`;
+      const chartRows=rows.map(r=>{
+        const start=deg, pct=(r.amount/total)*100;
+        deg+=(r.amount/total)*360;
+        return {...r,pct,start,end:deg};
+      });
+      pieChartCache.set(targetId,{ chartRows,total,month,owner });
+      const gradient=chartRows.map(r=>r.color+' '+r.start+'deg '+r.end+'deg').join(', ');
+      const legend=chartRows.map((r,i)=>{
+        const trend=interactive ? '<button type="button" class="pie-trend-btn" data-pie-trend="'+i+'">推移 ›</button>' : '';
+        return '<div class="legend-item"><button type="button" class="pie-legend-btn" data-pie-index="'+i+'" aria-pressed="false">'+
+          '<span class="lab"><span class="swatch" style="background:'+r.color+'"></span>'+escapePieLabel(r.label)+'</span>'+
+          '<span class="num">'+r.pct.toFixed(1)+'%</span></button>'+trend+'</div>';
+      }).join('');
+      target.innerHTML=
+        '<div class="donut-layout">'+
+          '<div class="donut-stage" role="button" tabindex="0" aria-label="円グラフを選択して種類別金額を表示">'+
+            '<div class="donut" style="background:conic-gradient('+gradient+');"></div>'+
+            '<div class="donut-center"><div class="label">資産合計</div><div class="value num">'+formatJPY(total).replace('¥','')+'円</div></div>'+
+          '</div>'+
+          '<div class="legend">'+legend+'</div>'+
+          '<div class="tap-hint">種類をタップすると円換算金額を表示'+(interactive?' ・「推移」で履歴を見る':'')+'</div>'+
+        '</div>';
+      target.querySelector('.donut-stage').addEventListener('click',event=>{
+        event.stopPropagation();
+        selectPieSlice(event,targetId);
+      });
+      target.querySelector('.donut-stage').addEventListener('keydown',event=>{
+        if(event.key==='Enter'||event.key===' '){ event.preventDefault(); event.stopPropagation(); showPieAmount(targetId,0); }
+      });
+      target.querySelectorAll('.pie-legend-btn').forEach(button=>{
+        button.addEventListener('click',event=>{ event.stopPropagation(); showPieAmount(targetId,Number(button.dataset.pieIndex)); });
+      });
+      target.querySelectorAll('.pie-trend-btn').forEach(button=>{
+        button.addEventListener('click',event=>{ event.stopPropagation(); openPieClassTrend(targetId,Number(button.dataset.pieTrend)); });
+      });
+    }
+    function showPieAmount(targetId, index){
+      const target=document.getElementById(targetId), ctx=pieChartCache.get(targetId);
+      if(!target||!ctx) return;
+      const row=ctx.chartRows[index];
+      const label=target.querySelector('.donut-center .label');
+      const value=target.querySelector('.donut-center .value');
+      if(!label||!value) return;
+      label.textContent=row ? row.label : '資産合計';
+      value.textContent=row ? formatJPY(row.amount) : formatJPY(ctx.total);
+      value.style.fontSize=row ? '15px' : '';
+      target.querySelectorAll('.pie-legend-btn').forEach(button=>{
+        button.setAttribute('aria-pressed',String(row && Number(button.dataset.pieIndex)===index));
+      });
+    }
+    function selectPieSlice(event,targetId){
+      const ctx=pieChartCache.get(targetId);
+      if(!ctx) return;
+      const bounds=event.currentTarget.getBoundingClientRect();
+      const dx=event.clientX-(bounds.left+bounds.width/2);
+      const dy=event.clientY-(bounds.top+bounds.height/2);
+      const distance=Math.hypot(dx,dy);
+      if(distance<bounds.width/2*0.35){ showPieAmount(targetId,-1); return; }
+      const degrees=(Math.atan2(dx,-dy)*180/Math.PI+360)%360;
+      const i=ctx.chartRows.findIndex(r=>degrees>=r.start&&degrees<r.end);
+      showPieAmount(targetId,i<0?ctx.chartRows.length-1:i);
+    }
+    function openPieClassTrend(targetId,index){
+      const ctx=pieChartCache.get(targetId);
+      if(!ctx||!ctx.chartRows[index]) return;
+      const row=ctx.chartRows[index];
+      showClassTrend(row.label,ctx.owner,row.classes);
     }
 
     /* ---------- list ---------- */
@@ -1858,7 +1946,7 @@
       const el=document.getElementById("backupStatus");
       if(!el) return;
       const last=data.meta&&data.meta.lastBackup;
-      if(!last){ el.innerHTML=`まだバックアップしていません。データは端末内にのみ保存されています。<br><strong style="color:var(--down)">消えると元に戻せません。</strong> 定期的に書き出してください。`; return; }
+      if(!last){ el.innerHTML=`まだJSONバックアップを作成していません。クラウド同期の有無にかかわらず、誤削除時に巻き戻せるよう定期的に書き出してください。`; return; }
       const days=Math.floor((Date.now()-new Date(last).getTime())/86400000);
       const when=new Date(last).toLocaleString("ja-JP",{year:"numeric",month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"});
       const warn=days>=90?` <strong style="color:var(--down)">（${days}日経過：書き出しをおすすめします）</strong>`:` （${days}日前）`;
@@ -1920,6 +2008,7 @@
       return normalize({
         rates: base.rates,            // keep this device's current rates
         meta: base.meta,
+        memoTree: incoming.memoTree || base.memoTree,
         mainCategories, assetClasses, accounts, entries
       });
     }
@@ -1934,8 +2023,7 @@
       data=load();
       activeDashboardMonth=latestSelectableMonth();
       activeListMonth=latestSelectableMonth();
-      render(); showTab("dashboard");
-      pushToCloud(true); // if synced, clear the cloud (and other devices) too
+      save(); showTab("dashboard"); // explicit reset, including deletions, is synced as a user edit
       toast("データをリセットしました");
     }
 
@@ -2027,10 +2115,10 @@
       openModal();
     }
     // sum of a given asset class (in JPY) over months, for the trend line
-    function classSeriesForRange(assetClass, owner, endMonth, range){
+    function classSeriesForRange(assetClass, owner, endMonth, range, classes=null){
       const months=selectableMonths().filter(m=>compareMonth(m,endMonth)<=0);
       let full=months.map(m=>{
-        const v=snapshotEntriesUpTo(m,owner).filter(e=>e.type==="asset"&&e.assetClass===assetClass).reduce((s,e)=>s+toJPY(e),0);
+        const v=snapshotEntriesUpTo(m,owner).filter(e=>e.type==="asset"&&(classes?classes.includes(e.assetClass):e.assetClass===assetClass)).reduce((s,e)=>s+toJPY(e),0);
         return { month:m, value:v };
       });
       const firstNonZero=full.findIndex(p=>p.value!==0);
@@ -2043,9 +2131,9 @@
       if(range==="5y") use=full.slice(-60);
       return use.length?use:[{month:endMonth,value:0}];
     }
-    function showClassTrend(assetClass, owner){
+    function showClassTrend(assetClass, owner, classes=null){
       const month=selectedDashboardMonth();
-      classTrendCtx={ assetClass, owner, month };
+      classTrendCtx={ assetClass, owner, month, classes };
       classTrendRange="all";
       document.getElementById("modalTitle").textContent=`${assetClass} の推移`;
       document.getElementById("modalSubtitle").textContent=`${ownerLabel(owner)} ・ ${monthLabel(month)}時点`;
@@ -2062,8 +2150,8 @@
     }
     function renderClassTrendChart(){
       if(!classTrendCtx) return;
-      const { assetClass, owner, month }=classTrendCtx;
-      const series=classSeriesForRange(assetClass, owner, month, classTrendRange);
+      const { assetClass, owner, month, classes }=classTrendCtx;
+      const series=classSeriesForRange(assetClass, owner, month, classTrendRange, classes);
       const el=document.getElementById("classTrendChart");
       if(el) el.innerHTML=createAreaSVG(series,520,300);
       document.querySelectorAll("#classRangeTabs .range-tab").forEach(b=>b.classList.toggle("active", b.getAttribute("data-range")===classTrendRange));
@@ -2089,161 +2177,370 @@
       toastTimer=setTimeout(()=>el.classList.remove("show"),2200);
     }
 
-    /* ---------- cloud sync (Firebase Firestore, realtime) ---------- */
+
+    /* ---------- cloud sync: server-authoritative initial load + transactional edits ---------- */
     const FIREBASE_VERSION = "12.14.0";
     const SYNC_KEY = "ogura-sync-config";
     const CLIENT_KEY = "ogura-client-id";
-    let syncState = { connected:false, connecting:false, applyingRemote:false, unsub:null, docRef:null, db:null };
+    const SYNC_BASE_KEY = "ogura-sync-last-server-v2";
+    const SYNC_PENDING_KEY = "ogura-sync-pending-v2";
+    const SYNC_RECOVERY_KEY = "ogura-sync-recovery-v2";
+    let syncState = {
+      connected:false, connecting:false, ready:false, applyingRemote:false,
+      unsub:null, docRef:null, db:null, runTransaction:null, generation:0,
+      marker:null, writePromise:null, localRevision:0, error:"", conflict:false,
+      seeding:false, lastSyncedAt:null
+    };
     let pushTimer = null;
 
     function clientId(){
-      let id = localStorage.getItem(CLIENT_KEY);
-      if(!id){ id = uid("dev"); localStorage.setItem(CLIENT_KEY, id); }
+      let id=localStorage.getItem(CLIENT_KEY);
+      if(!id){ id=uid("dev"); localStorage.setItem(CLIENT_KEY,id); }
       return id;
     }
     function getSyncConfig(){
-      try{ return JSON.parse(localStorage.getItem(SYNC_KEY) || "null"); }catch(e){ return null; }
+      try{ return JSON.parse(localStorage.getItem(SYNC_KEY)||"null"); }
+      catch(e){ return null; }
+    }
+    function syncMarker(config){
+      return config.firebaseConfig.projectId+":"+config.familyCode;
+    }
+    function readSyncBase(){
+      try{
+        const state=JSON.parse(localStorage.getItem(SYNC_BASE_KEY)||"null");
+        return state && state.marker===syncState.marker ? state.data : null;
+      }catch(e){ return null; }
+    }
+    function saveSyncBase(serverData){
+      localStorage.setItem(SYNC_BASE_KEY,JSON.stringify({marker:syncState.marker,data:serverData}));
+    }
+    function hasPendingSync(){
+      return !!syncState.marker && localStorage.getItem(SYNC_PENDING_KEY)===syncState.marker;
+    }
+    function preserveLocalCopy(reason){
+      try{
+        const copy={date:new Date().toISOString(),reason,marker:syncState.marker,data:JSON.parse(JSON.stringify(data))};
+        const prior=JSON.parse(localStorage.getItem(SYNC_RECOVERY_KEY)||"[]");
+        const copies=Array.isArray(prior)?prior:(prior?[prior]:[]);
+        if(copies.some(c=>JSON.stringify(c.data)===JSON.stringify(copy.data))) return true;
+        copies.push(copy);
+        // Older recovery versions can be discarded if the browser storage is full.
+        while(copies.length){
+          try{
+            localStorage.setItem(SYNC_RECOVERY_KEY,JSON.stringify(copies.slice(-4)));
+            return true;
+          }catch(storageError){
+            if(copies.length===1) throw storageError;
+            copies.shift();
+          }
+        }
+      }catch(err){ console.warn("Could not save local recovery copy",err); }
+      return false;
+    }
+    function downloadSyncRecovery(){
+      let saved=null;
+      try{ saved=JSON.parse(localStorage.getItem(SYNC_RECOVERY_KEY)||"null"); }catch(e){}
+      const copies=Array.isArray(saved)?saved:(saved?[saved]:[]);
+      if(!copies.length){ toast("退避されたデータはありません"); return; }
+      let index=copies.length-1;
+      if(copies.length>1){
+        const options=copies.map((c,i)=>(i+1)+": "+c.date.slice(0,16)+" "+c.reason).join("\n");
+        const answer=prompt("書き出す退避データの番号を選んでください：\n"+options,String(copies.length));
+        if(answer===null) return;
+        index=Number(answer)-1;
+        if(!Number.isInteger(index)||index<0||index>=copies.length){toast("番号が正しくありません");return;}
+      }
+      const recovery=copies[index];
+      const blob=new Blob([JSON.stringify(recovery.data,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement("a");
+      link.href=url;
+      link.download="finance-local-recovery-"+recovery.date.slice(0,10)+".json";
+      link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      toast("端末の退避データを書き出しました");
     }
     function generateFamilyCode(){
-      const rnd = (crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g,"") : (Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-      document.getElementById("syncFamilyCode").value = "ogura-" + rnd.slice(0,16);
+      const rnd=(crypto&&crypto.randomUUID)?crypto.randomUUID().replace(/-/g,""):(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
+      document.getElementById("syncFamilyCode").value="ogura-"+rnd.slice(0,16);
     }
     function parseFirebaseConfig(text){
       if(!text) return null;
-      let t = text.trim();
-      const s = t.indexOf("{"), e = t.lastIndexOf("}");
-      if(s<0 || e<0) return null;
-      t = t.slice(s, e+1);
-      t = t.replace(/'/g, '"');                          // single -> double quotes
-      t = t.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":'); // quote unquoted keys
-      t = t.replace(/,(\s*[}\]])/g, "$1");               // trailing commas
+      let t=text.trim();
+      const s=t.indexOf("{"),e=t.lastIndexOf("}");
+      if(s<0||e<0) return null;
+      t=t.slice(s,e+1).replace(/'/g,'"').replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g,'$1"$2":').replace(/,(\s*[}\]])/g,"$1");
       try{ return JSON.parse(t); }catch(err){ return null; }
     }
-
-    function renderSyncStatus(msg, kind){
-      const el = document.getElementById("syncStatus");
+    function renderSyncStatus(message){
+      const el=document.getElementById("syncStatus");
       if(!el) return;
-      const cfg = getSyncConfig();
-      if(msg){ el.innerHTML = msg; return; }
-      if(syncState.connected && cfg){
-        el.innerHTML = `<strong style="color:var(--up)">接続済み</strong> ・ 家族コード：${cfg.familyCode}<br>入力・編集は自動で同期されます。`;
-      } else if(cfg){
-        el.innerHTML = `設定は保存済みですが未接続です。「接続して同期を開始」を押してください。`;
-      } else {
-        el.innerHTML = `未設定です。下のFirebase設定と家族コードを入れて接続すると、2台でリアルタイムに同期します。`;
+      const cfg=getSyncConfig();
+      if(message){ el.textContent=message; return; }
+      if(syncState.conflict){
+        el.textContent="同じ項目の同時変更を検出しました。上書きを停止しています。退避データをダウンロードして内容を確認してください。";
+      }else if(syncState.error){
+        el.textContent="同期が完了していません："+syncState.error+"。この端末の変更は保留されます。";
+      }else if(syncState.ready && syncState.connected && cfg){
+        el.textContent="クラウド同期済み ・ 家族コード："+cfg.familyCode+
+          " ・ 最終確認："+(syncState.lastSyncedAt?new Date(syncState.lastSyncedAt).toLocaleTimeString("ja-JP"):"確認中")+
+          (hasPendingSync()?" ・ 変更を送信中":"");
+      }else if(syncState.connecting){
+        el.textContent="クラウドの最新データを確認中です。";
+      }else if(cfg && cfg.enabled){
+        el.textContent="クラウド未接続です。端末の古いデータは自動送信されません。同期設定を確認してください。";
+      }else if(cfg){
+        el.textContent="同期を解除しています。";
+      }else{
+        el.textContent="未設定です。同じFirebase設定と家族コードで接続するとデータを同期します。";
       }
     }
-
-    async function connectSync(fromButton){
-      let familyCode, firebaseConfig;
-      const saved = getSyncConfig();
-      if(fromButton){
-        familyCode = (document.getElementById("syncFamilyCode").value || "").trim();
-        firebaseConfig = parseFirebaseConfig(document.getElementById("syncConfig").value);
-        if(!familyCode){ toast("家族コードを入力してください。"); return; }
-        if(!firebaseConfig || !firebaseConfig.projectId){ toast("Firebase設定を正しく貼り付けてください。"); return; }
-        localStorage.setItem(SYNC_KEY, JSON.stringify({ familyCode, firebaseConfig, enabled:true }));
-      } else if(saved && saved.enabled){
-        familyCode = saved.familyCode; firebaseConfig = saved.firebaseConfig;
-      } else {
-        return;
-      }
-
-      renderSyncStatus(`接続中…`);
-      syncState.connecting = true;
-      renderSyncBanner();
-      try{
-        const [{ initializeApp, getApps, getApp }, { getFirestore, doc, setDoc, onSnapshot }, { getAuth, signInAnonymously }] = await Promise.all([
-          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
-          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`),
-          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-auth.js`)
-        ]);
-        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-        try{ await signInAnonymously(getAuth(app)); }catch(authErr){ /* auth may be disabled; continue, rules may allow */ }
-        const db = getFirestore(app);
-        const docRef = doc(db, "families", familyCode);
-
-        if(syncState.unsub){ syncState.unsub(); syncState.unsub = null; }
-        syncState.db = db; syncState.docRef = docRef;
-
-        // store the setDoc reference for pushes
-        syncState._setDoc = setDoc;
-
-        syncState.unsub = onSnapshot(docRef, (snap)=>{
-          if(!snap.exists()){
-            pushToCloud(true); // seed the cloud with local data
-            return;
-          }
-          const remote = snap.data();
-          if(!remote) return;
-          let payload;
-          try{ payload = JSON.parse(remote.data); }catch(e){ return; }
-          if(!payload || !Array.isArray(payload.entries)) return;
-          if(remote.writerId === clientId()){
-            // our own echo — only act if local has unpushed newer edits (e.g. made offline)
-            if((data.updatedAt||0) > (remote.updatedAt||0)) pushToCloud(true);
-            return;
-          }
-          syncState.applyingRemote = true;
-          const remoteD = normalize(payload);
-          const { merged, localContributed } = mergeStates(data, remoteD);
-          data = merged;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-          activeDashboardMonth = latestSelectableMonth();
-          activeListMonth = latestSelectableMonth();
-          render();
-          syncState.applyingRemote = false;
-          // if our local had newer records than remote, push the merged result so all devices converge
-          if(localContributed) pushToCloud(true);
-          toast("同期しました");
-        }, (err)=>{
-          syncState.connected = false;
-          syncState.connecting = false;
-          renderSyncStatus(`<strong style="color:var(--down)">同期エラー</strong>：${(err && err.code) || "接続できませんでした"}。Firebase設定・Firestoreの作成・ルールを確認してください。`);
-          renderSyncBanner();
-        });
-
-        syncState.connected = true;
-        syncState.connecting = false;
-        renderSyncStatus();
-        renderSyncBanner();
-        if(fromButton){ toast("同期を開始しました"); toggleSyncDetails(false); }
-        // NOTE: do not push local up on connect — the first snapshot merges remote+local,
-        // and pushes back only if local has newer records (prevents stale device from clobbering).
-      }catch(err){
-        syncState.connected = false;
-        syncState.connecting = false;
-        renderSyncStatus(`<strong style="color:var(--down)">同期エラー</strong>：SDKを読み込めませんでした。通信環境を確認してください。`);
-        renderSyncBanner();
-      }
-    }
-
-    function disconnectSync(){
-      if(syncState.unsub){ syncState.unsub(); syncState.unsub = null; }
-      syncState.connected = false;
-      const cfg = getSyncConfig();
-      if(cfg){ cfg.enabled = false; localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); }
+    function applyServerState(incoming){
+      syncState.applyingRemote=true;
+      data=normalize(JSON.parse(JSON.stringify(incoming)));
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+      saveSyncBase(data);
+      // Keep the user's chosen historical month when receiving a remote update.
+      const validMonths=selectableMonths();
+      if(!validMonths.includes(activeDashboardMonth)) activeDashboardMonth=latestSelectableMonth();
+      if(!validMonths.includes(activeListMonth)) activeListMonth=latestSelectableMonth();
+      render();
+      syncState.applyingRemote=false;
+      syncState.lastSyncedAt=Date.now();
       renderSyncStatus();
       renderSyncBanner();
+    }
+    async function connectSync(fromButton){
+      const saved=getSyncConfig();
+      let familyCode, firebaseConfig;
+      if(fromButton){
+        familyCode=(document.getElementById("syncFamilyCode").value||"").trim();
+        firebaseConfig=parseFirebaseConfig(document.getElementById("syncConfig").value);
+        if(!familyCode){ toast("家族コードを入力してください。"); return; }
+        if(!firebaseConfig||!firebaseConfig.projectId){ toast("Firebase設定が正しくありません。"); return; }
+        localStorage.setItem(SYNC_KEY,JSON.stringify({familyCode,firebaseConfig,enabled:true}));
+      }else if(saved && saved.enabled){
+        familyCode=saved.familyCode;firebaseConfig=saved.firebaseConfig;
+      }else return;
+      const gen=++syncState.generation;
+      clearTimeout(pushTimer);
+      if(syncState.unsub){ syncState.unsub();syncState.unsub=null; }
+      syncState.connected=false;
+      syncState.connecting=true;
+      syncState.ready=false;
+      syncState.seeding=false;
+      syncState.error="";
+      syncState.conflict=false;
+      syncState.marker=syncMarker({familyCode,firebaseConfig});
+      renderSyncStatus();
+      renderSyncBanner();
+      try{
+        const [{initializeApp,getApps},{getFirestore,doc,runTransaction,onSnapshot},{getAuth,signInAnonymously}]=await Promise.all([
+          import("https://www.gstatic.com/firebasejs/"+FIREBASE_VERSION+"/firebase-app.js"),
+          import("https://www.gstatic.com/firebasejs/"+FIREBASE_VERSION+"/firebase-firestore.js"),
+          import("https://www.gstatic.com/firebasejs/"+FIREBASE_VERSION+"/firebase-auth.js")
+        ]);
+        if(gen!==syncState.generation) return;
+        const appName="ogura-finance-"+firebaseConfig.projectId;
+        const app=getApps().find(a=>a.name===appName)||initializeApp(firebaseConfig,appName);
+        try{ await signInAnonymously(getAuth(app)); }
+        catch(authErr){ console.warn("Firebase anonymous auth unavailable",authErr); }
+        if(gen!==syncState.generation) return;
+        const db=getFirestore(app);
+        const docRef=doc(db,"families",familyCode);
+        syncState.db=db;syncState.docRef=docRef;syncState.runTransaction=runTransaction;
+
+        syncState.unsub=onSnapshot(docRef,{includeMetadataChanges:true},async snap=>{
+          if(gen!==syncState.generation) return;
+          if(snap.metadata.fromCache){
+            syncState.connected=false;
+            renderSyncStatus("サーバー接続を確認中です。端末内のデータはクラウドへ送信しません。");
+            renderSyncBanner();
+            return;
+          }
+          // A locally staged write is not evidence that the server accepted it.
+          if(snap.metadata.hasPendingWrites) return;
+          if(!snap.exists()){
+            syncState.connected=false;
+            // A cloud document disappearing after initialization is NOT a fresh family.
+            // Never recreate it from a potentially stale device.
+            if(syncState.ready){
+              syncState.error="クラウドデータが見つかりません。自動復元を停止しました";
+              renderSyncStatus();renderSyncBanner();return;
+            }
+            if(!fromButton){
+              syncState.connecting=false;
+              syncState.error="クラウドに保存データが見つかりません。設定画面で接続を確認してください";
+              renderSyncStatus();renderSyncBanner();
+              return;
+            }
+            if(syncState.seeding) return;
+            syncState.seeding=true;
+            try{
+              const firstData=JSON.parse(JSON.stringify(data));
+              await runTransaction(db,async tx=>{
+                const check=await tx.get(docRef);
+                if(!check.exists()) tx.set(docRef,{data:JSON.stringify(firstData),writerId:clientId(),updatedAt:Date.now()});
+              });
+            }catch(err){
+              syncState.error="クラウドの初期化に失敗："+(err.code||err.message);
+              syncState.connecting=false;
+              renderSyncStatus();renderSyncBanner();
+            }finally{syncState.seeding=false;}
+            return;
+          }
+          const remote=snap.data();
+          let cloudData;
+          try{
+            cloudData=JSON.parse(remote.data);
+            if(!cloudData||!Array.isArray(cloudData.entries)||!Array.isArray(cloudData.accounts)) throw Error("invalid data");
+            cloudData=normalize(cloudData);
+          }catch(e){
+            syncState.error="クラウドデータの形式が不正です（上書きせず停止）";
+            syncState.connecting=false;syncState.connected=false;
+            renderSyncStatus();renderSyncBanner();return;
+          }
+          syncState.connected=true;
+          syncState.connecting=false;
+          // A snapshot doesn't resolve an existing write conflict.
+          if(!syncState.conflict) syncState.error="";
+          syncState.lastSyncedAt=Date.now();
+          if(!syncState.ready){
+            syncState.ready=true;
+            if(hasPendingSync()){
+              if(readSyncBase()){
+                renderSyncStatus();
+                flushPendingSync();
+              }else{
+                // A user edited while connecting, before any verified server baseline.
+                // Never drop those edits or upload the whole stale state.
+                preserveLocalCopy("比較元のない同期前編集");
+                syncState.ready=false;
+                syncState.connected=false;
+                syncState.error="接続前に編集されたデータがあります。上書きせず保留しました。JSONバックアップを確認してください";
+                renderSyncStatus();renderSyncBanner();
+              }
+            }else{
+              if(JSON.stringify(data)!==JSON.stringify(cloudData)){
+                if(!preserveLocalCopy("クラウド同期前の端末データ")){
+                  // Do not destroy stale local data if no safety copy can be written.
+                  syncState.ready=false;
+                  syncState.connected=false;
+                  syncState.error="古い端末データを退避できません。先にJSONバックアップを書き出してください";
+                  renderSyncStatus();renderSyncBanner();return;
+                }
+                toast("クラウドの最新データを取得しました（古い端末データは退避）");
+              }
+              localStorage.removeItem(SYNC_PENDING_KEY);
+              applyServerState(cloudData);
+            }
+          }else if(hasPendingSync() || syncState.writePromise){
+            // A remote event must not erase unsent local edits.
+            renderSyncStatus();
+            if(!syncState.writePromise && !syncState.conflict) flushPendingSync();
+          }else{
+            // Metadata-only events should not rerender the forms or interrupt typing.
+            if(JSON.stringify(data)!==JSON.stringify(cloudData)) applyServerState(cloudData);
+            else{ saveSyncBase(cloudData); renderSyncStatus(); }
+          }
+          renderSyncBanner();
+        },err=>{
+          if(gen!==syncState.generation) return;
+          syncState.connected=false;syncState.connecting=false;
+          syncState.error=(err&&err.code)||"クラウドに接続できません";
+          renderSyncStatus();renderSyncBanner();
+        });
+        renderSyncStatus();
+        if(fromButton){ toggleSyncDetails(false); }
+      }catch(err){
+        if(gen!==syncState.generation) return;
+        syncState.connected=false;syncState.connecting=false;
+        syncState.error="Firebaseの読み込み・認証に失敗："+(err.message||"通信エラー");
+        renderSyncStatus();renderSyncBanner();
+      }
+    }
+    function disconnectSync(){
+      ++syncState.generation;
+      clearTimeout(pushTimer);
+      if(syncState.unsub){syncState.unsub();syncState.unsub=null;}
+      syncState.connected=false;syncState.connecting=false;syncState.ready=false;
+      syncState.error="";syncState.conflict=false;
+      const cfg=getSyncConfig();
+      if(cfg){cfg.enabled=false;localStorage.setItem(SYNC_KEY,JSON.stringify(cfg));}
+      renderSyncStatus();renderSyncBanner();
       toast("同期を解除しました");
     }
-
+    // Only save() or an explicit reset calls this; loading cached old PC data never does.
     function pushToCloud(immediate){
-      if(!syncState.connected || !syncState.docRef || !syncState._setDoc) return;
-      if(syncState.applyingRemote) return;
-      const doPush = async ()=>{
-        try{
-          await syncState._setDoc(syncState.docRef, {
-            data: JSON.stringify(data),
-            writerId: clientId(),
-            updatedAt: Date.now()
-          });
-        }catch(e){ /* network/permission errors surfaced via onSnapshot error */ }
-      };
+      const cfg=getSyncConfig();
+      if(!cfg||!cfg.enabled||syncState.applyingRemote) return;
+      const marker=syncMarker(cfg);
+      localStorage.setItem(SYNC_PENDING_KEY,marker);
+      syncState.localRevision++;
+      syncState.error="";syncState.conflict=false;
       clearTimeout(pushTimer);
-      if(immediate) doPush();
-      else pushTimer = setTimeout(doPush, 700); // debounce rapid edits
+      if(!syncState.ready){renderSyncBanner();return;}
+      if(immediate) flushPendingSync();
+      else pushTimer=setTimeout(flushPendingSync,700);
+      renderSyncStatus();
     }
+    function flushPendingSync(){
+      if(!syncState.ready||!syncState.connected||!syncState.runTransaction||
+         !hasPendingSync()||syncState.writePromise||syncState.conflict) return;
+      const base=readSyncBase();
+      if(!base){
+        syncState.error="変更の比較元が見つかりません。自動上書きを停止しました";
+        preserveLocalCopy("同期の比較元データなし");
+        renderSyncStatus();renderSyncBanner();return;
+      }
+      const draft=JSON.parse(JSON.stringify(data));
+      const revision=syncState.localRevision;
+      syncState.writePromise=(async()=>{
+        const merged=await syncState.runTransaction(syncState.db,async transaction=>{
+          const snap=await transaction.get(syncState.docRef);
+          if(!snap.exists()) throw Error("クラウドデータが消えています");
+          let remoteD;
+          try{ remoteD=normalize(JSON.parse(snap.data().data)); }
+          catch(e){ throw Error("クラウドデータの解析に失敗"); }
+          const result=rebaseUserChanges(base,draft,remoteD);
+          if(result.conflicts.length){
+            const err=Error("同じ項目が別端末でも変更されました："+result.conflicts.slice(0,3).join(", "));
+            err.syncConflict=true;throw err;
+          }
+          transaction.set(syncState.docRef,{data:JSON.stringify(result.merged),writerId:clientId(),updatedAt:Date.now()});
+          return result.merged;
+        });
+        if(syncState.localRevision===revision){
+          localStorage.removeItem(SYNC_PENDING_KEY);
+          applyServerState(merged);
+        }else{
+          // Further local edits happened while the transaction was in flight.
+          const newer=rebaseUserChanges(draft,data,merged);
+          if(newer.conflicts.length) throw Error("送信中の追加編集が競合しました");
+          saveSyncBase(merged);
+          data=newer.merged;
+          localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+          render();
+        }
+        syncState.error="";
+        syncState.conflict=false;
+        renderSyncStatus();renderSyncBanner();
+      })().catch(err=>{
+        syncState.error=err.message||"変更を送信できません";
+        syncState.conflict=!!err.syncConflict;
+        if(syncState.conflict) preserveLocalCopy("同時編集の競合");
+        renderSyncStatus();renderSyncBanner();
+      }).finally(()=>{
+        syncState.writePromise=null;
+        if(hasPendingSync()&&!syncState.conflict&&!syncState.error){
+          clearTimeout(pushTimer);
+          pushTimer=setTimeout(flushPendingSync,100);
+        }
+      });
+    }
+    window.addEventListener("online",()=>{
+      if(syncState.ready&&!syncState.conflict) flushPendingSync();
+    });
 
     function toggleRegDetails(force){
       const el=document.getElementById("regDetails");
@@ -2555,13 +2852,16 @@
     function renderSyncBanner(){
       const el = document.getElementById("syncBanner");
       if(!el) return;
-      const cfg = getSyncConfig();
-      // show only when sync was set up & enabled but not currently connected
-      if(cfg && cfg.enabled && !syncState.connected && !syncState.connecting){
-        el.style.display = "flex";
-        el.innerHTML = `<div><div>同期が接続されていません</div><div class="b-sub">この端末の変更が相手に届きません。タップして設定を開き、再接続してください。</div></div>`;
-      } else {
-        el.style.display = "none";
+      const cfg=getSyncConfig();
+      if(cfg && cfg.enabled && (!syncState.connected || hasPendingSync() || syncState.error || syncState.conflict)){
+        el.style.display="flex";
+        el.textContent=syncState.conflict
+          ? "同時編集の競合を検出しました。データの上書きを停止しています。設定で退避データを確認してください。"
+          : (syncState.error || !syncState.connected)
+            ? "クラウド同期が完了していません。設定から接続状態を確認してください。"
+            : "端末の変更をクラウドに送信中です。";
+      }else{
+        el.style.display="none";
       }
     }
 
