@@ -241,6 +241,12 @@
     .legend{ width:100%; margin-top:16px; display:flex; flex-direction:column; gap:8px; }
     .legend-item{ display:flex; align-items:center; font-size:13px; color:var(--ink); justify-content:space-between; }
     .legend-item .lab{ display:flex; align-items:center; gap:8px; }
+    .pie-legend-btn{ display:flex; align-items:center; justify-content:space-between; flex:1; gap:12px; min-width:0; border:0; border-radius:8px; background:transparent; color:var(--ink); padding:8px 6px; text-align:left; font-size:13px; cursor:pointer; }
+    .pie-legend-btn[aria-pressed="true"]{ background:var(--primary-soft); color:var(--primary); font-weight:700; }
+    .pie-legend-btn .lab{ min-width:0; overflow-wrap:anywhere; }
+    .pie-trend-btn{ border:0; background:var(--bg); color:var(--primary); border-radius:8px; padding:8px; font-size:12px; white-space:nowrap; cursor:pointer; }
+    .donut-stage{ cursor:pointer; touch-action:manipulation; }
+    .donut-stage:focus-visible, .pie-legend-btn:focus-visible{ outline:2px solid var(--primary); outline-offset:3px; }
     .swatch{ width:11px; height:11px; border-radius:3px; display:inline-block; }
     .tap-hint{ font-size:11px; color:var(--faint); margin-top:10px; text-align:center; }
 
@@ -407,7 +413,7 @@
             <div id="pieCardWrap" class="card tap-card" onclick="openChartModal('pie')">
               <div class="section-title">資産の種類別割合</div>
               <div id="pieCard" style="margin-top:12px;"></div>
-              <div class="tap-hint">タップで拡大・種類別の推移</div>
+              <div class="tap-hint">項目をタップで金額表示・余白をタップで拡大</div>
             </div>
 
             <div class="card">
@@ -1318,24 +1324,32 @@
       document.querySelectorAll("#dashboard .range-tab").forEach(b=>b.classList.toggle("active", map[b.textContent]===areaRange));
     }
 
+
     const PIE_PALETTE = ["#2f5bd0","#4f9d7a","#6aa9c9","#c98a5a","#8e7cc3","#d1657a","#5aa0a0","#b6c2dd","#a0a86a","#cfd5df"];
+    const pieChartCache = new Map();
+    function escapePieLabel(value){
+      return String(value).replace(/[&<>"']/g, function(ch){
+        return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch];
+      });
+    }
     function pieDataFor(month, owner){
       const entries=totalsForSnapshot(month, owner).entries.filter(e=>e.type==="asset");
       const byClass={};
       entries.forEach(e=>{ byClass[e.assetClass]=(byClass[e.assetClass]||0)+toJPY(e); });
       const total=Object.values(byClass).reduce((s,v)=>s+v,0);
-      if(!total) return { rows:[], total:0 };
-      // keep classes >= 1%, lump the rest into その他
-      const big=[]; let otherSum=0;
+      if(total<=0) return { rows:[], total:0 };
+      const big=[]; let otherSum=0, otherClasses=[];
       Object.keys(byClass).forEach(k=>{
         const amt=byClass[k];
-        if((amt/total)*100 >= 1) big.push({ label:k, amount:amt });
-        else otherSum+=amt;
+        if(amt<=0) return;
+        if((amt/total)*100 >= 1) big.push({ label:k, amount:amt, classes:[k] });
+        else { otherSum+=amt; otherClasses.push(k); }
       });
       big.sort((a,b)=>b.amount-a.amount);
       if(otherSum>0){
         const existing=big.find(r=>r.label==="その他");
-        if(existing) existing.amount+=otherSum; else big.push({ label:"その他", amount:otherSum });
+        if(existing){ existing.amount+=otherSum; existing.classes.push(...otherClasses); }
+        else big.push({ label:"その他", amount:otherSum, classes:otherClasses });
       }
       const rows=big.map((r,i)=>({ ...r, color:PIE_PALETTE[i % PIE_PALETTE.length] }));
       return { rows, total };
@@ -1344,29 +1358,80 @@
 
     function renderPieCard(targetId="pieCard", opts={}){
       const target=document.getElementById(targetId);
+      if(!target) return;
       const month=opts.month || selectedDashboardMonth();
       const owner=opts.owner || selectedDashboardOwner();
       const interactive=!!opts.interactive;
       const { rows, total }=pieDataFor(month, owner);
-      if(!rows.length){ target.innerHTML=`<div class="empty">資産データがありません</div>`; return; }
+      if(!rows.length){ pieChartCache.delete(targetId); target.innerHTML='<div class="empty">資産データがありません</div>'; return; }
       let deg=0;
-      const chartRows=rows.map(r=>{ const start=deg; const pct=total?(r.amount/total)*100:0; deg+=(r.amount/total)*360; return {...r,pct,start,end:deg}; });
-      const gradient=chartRows.map(r=>`${r.color} ${r.start}deg ${r.end}deg`).join(", ");
-      const legend=chartRows.map(r=>{
-        const click = interactive ? ` class="legend-item tap-row" style="cursor:pointer;" onclick="showClassTrend('${r.label.replace(/'/g,"\\'")}','${owner}')"` : ` class="legend-item"`;
-        const arrow = interactive ? ` <span style="color:var(--faint);">›</span>` : "";
-        return `<div${click}><span class="lab"><span class="swatch" style="background:${r.color}"></span>${r.label}</span><span class="num">${r.pct.toFixed(1)}%${arrow}</span></div>`;
-      }).join("");
-      target.innerHTML=`
-        <div class="donut-layout">
-          <div class="donut-stage">
-            <div class="donut" style="background:conic-gradient(${gradient});">
-              <div class="donut-center"><div class="label">資産合計</div><div class="value num">${formatJPY(total).replace("¥","")}円</div></div>
-            </div>
-          </div>
-          <div class="legend">${legend}</div>
-          ${interactive?`<div class="tap-hint">種類をタップで推移を表示</div>`:""}
-        </div>`;
+      const chartRows=rows.map(r=>{
+        const start=deg, pct=(r.amount/total)*100;
+        deg+=(r.amount/total)*360;
+        return {...r,pct,start,end:deg};
+      });
+      pieChartCache.set(targetId,{ chartRows,total,month,owner });
+      const gradient=chartRows.map(r=>r.color+' '+r.start+'deg '+r.end+'deg').join(', ');
+      const legend=chartRows.map((r,i)=>{
+        const trend=interactive ? '<button type="button" class="pie-trend-btn" data-pie-trend="'+i+'">推移 ›</button>' : '';
+        return '<div class="legend-item"><button type="button" class="pie-legend-btn" data-pie-index="'+i+'" aria-pressed="false">'+
+          '<span class="lab"><span class="swatch" style="background:'+r.color+'"></span>'+escapePieLabel(r.label)+'</span>'+
+          '<span class="num">'+r.pct.toFixed(1)+'%</span></button>'+trend+'</div>';
+      }).join('');
+      target.innerHTML=
+        '<div class="donut-layout">'+
+          '<div class="donut-stage" role="button" tabindex="0" aria-label="円グラフを選択して種類別金額を表示">'+
+            '<div class="donut" style="background:conic-gradient('+gradient+');"></div>'+
+            '<div class="donut-center"><div class="label">資産合計</div><div class="value num">'+formatJPY(total).replace('¥','')+'円</div></div>'+
+          '</div>'+
+          '<div class="legend">'+legend+'</div>'+
+          '<div class="tap-hint">種類をタップすると円換算金額を表示'+(interactive?' ・「推移」で履歴を見る':'')+'</div>'+
+        '</div>';
+      target.querySelector('.donut-stage').addEventListener('click',event=>{
+        event.stopPropagation();
+        selectPieSlice(event,targetId);
+      });
+      target.querySelector('.donut-stage').addEventListener('keydown',event=>{
+        if(event.key==='Enter'||event.key===' '){ event.preventDefault(); event.stopPropagation(); showPieAmount(targetId,0); }
+      });
+      target.querySelectorAll('.pie-legend-btn').forEach(button=>{
+        button.addEventListener('click',event=>{ event.stopPropagation(); showPieAmount(targetId,Number(button.dataset.pieIndex)); });
+      });
+      target.querySelectorAll('.pie-trend-btn').forEach(button=>{
+        button.addEventListener('click',event=>{ event.stopPropagation(); openPieClassTrend(targetId,Number(button.dataset.pieTrend)); });
+      });
+    }
+    function showPieAmount(targetId, index){
+      const target=document.getElementById(targetId), ctx=pieChartCache.get(targetId);
+      if(!target||!ctx) return;
+      const row=ctx.chartRows[index];
+      const label=target.querySelector('.donut-center .label');
+      const value=target.querySelector('.donut-center .value');
+      if(!label||!value) return;
+      label.textContent=row ? row.label : '資産合計';
+      value.textContent=row ? formatJPY(row.amount) : formatJPY(ctx.total);
+      value.style.fontSize=row ? '15px' : '';
+      target.querySelectorAll('.pie-legend-btn').forEach(button=>{
+        button.setAttribute('aria-pressed',String(row && Number(button.dataset.pieIndex)===index));
+      });
+    }
+    function selectPieSlice(event,targetId){
+      const ctx=pieChartCache.get(targetId);
+      if(!ctx) return;
+      const bounds=event.currentTarget.getBoundingClientRect();
+      const dx=event.clientX-(bounds.left+bounds.width/2);
+      const dy=event.clientY-(bounds.top+bounds.height/2);
+      const distance=Math.hypot(dx,dy);
+      if(distance<bounds.width/2*0.35){ showPieAmount(targetId,-1); return; }
+      const degrees=(Math.atan2(dx,-dy)*180/Math.PI+360)%360;
+      const i=ctx.chartRows.findIndex(r=>degrees>=r.start&&degrees<r.end);
+      showPieAmount(targetId,i<0?ctx.chartRows.length-1:i);
+    }
+    function openPieClassTrend(targetId,index){
+      const ctx=pieChartCache.get(targetId);
+      if(!ctx||!ctx.chartRows[index]) return;
+      const row=ctx.chartRows[index];
+      showClassTrend(row.label,ctx.owner,row.classes);
     }
 
     /* ---------- list ---------- */
@@ -2027,10 +2092,10 @@
       openModal();
     }
     // sum of a given asset class (in JPY) over months, for the trend line
-    function classSeriesForRange(assetClass, owner, endMonth, range){
+    function classSeriesForRange(assetClass, owner, endMonth, range, classes=null){
       const months=selectableMonths().filter(m=>compareMonth(m,endMonth)<=0);
       let full=months.map(m=>{
-        const v=snapshotEntriesUpTo(m,owner).filter(e=>e.type==="asset"&&e.assetClass===assetClass).reduce((s,e)=>s+toJPY(e),0);
+        const v=snapshotEntriesUpTo(m,owner).filter(e=>e.type==="asset"&&(classes?classes.includes(e.assetClass):e.assetClass===assetClass)).reduce((s,e)=>s+toJPY(e),0);
         return { month:m, value:v };
       });
       const firstNonZero=full.findIndex(p=>p.value!==0);
@@ -2043,9 +2108,9 @@
       if(range==="5y") use=full.slice(-60);
       return use.length?use:[{month:endMonth,value:0}];
     }
-    function showClassTrend(assetClass, owner){
+    function showClassTrend(assetClass, owner, classes=null){
       const month=selectedDashboardMonth();
-      classTrendCtx={ assetClass, owner, month };
+      classTrendCtx={ assetClass, owner, month, classes };
       classTrendRange="all";
       document.getElementById("modalTitle").textContent=`${assetClass} の推移`;
       document.getElementById("modalSubtitle").textContent=`${ownerLabel(owner)} ・ ${monthLabel(month)}時点`;
@@ -2062,8 +2127,8 @@
     }
     function renderClassTrendChart(){
       if(!classTrendCtx) return;
-      const { assetClass, owner, month }=classTrendCtx;
-      const series=classSeriesForRange(assetClass, owner, month, classTrendRange);
+      const { assetClass, owner, month, classes }=classTrendCtx;
+      const series=classSeriesForRange(assetClass, owner, month, classTrendRange, classes);
       const el=document.getElementById("classTrendChart");
       if(el) el.innerHTML=createAreaSVG(series,520,300);
       document.querySelectorAll("#classRangeTabs .range-tab").forEach(b=>b.classList.toggle("active", b.getAttribute("data-range")===classTrendRange));
