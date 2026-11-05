@@ -2244,8 +2244,8 @@
       if(!copies.length){ toast("退避されたデータはありません"); return; }
       let index=copies.length-1;
       if(copies.length>1){
-        const options=copies.map((c,i)=>(i+1)+": "+c.date.slice(0,16)+" "+c.reason).join("\\n");
-        const answer=prompt("書き出す退避データの番号を選んでください：\\n"+options,String(copies.length));
+        const options=copies.map((c,i)=>(i+1)+": "+c.date.slice(0,16)+" "+c.reason).join("\n");
+        const answer=prompt("書き出す退避データの番号を選んでください：\n"+options,String(copies.length));
         if(answer===null) return;
         index=Number(answer)-1;
         if(!Number.isInteger(index)||index<0||index>=copies.length){toast("番号が正しくありません");return;}
