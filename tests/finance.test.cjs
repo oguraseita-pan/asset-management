@@ -138,6 +138,7 @@ function makeFxContext(){
     '\nthis.fx={toJPY,totalsForSnapshot,chartSeriesForRange,assetSeriesForAccount,classSeriesForRange,entryRowHtml}',
     context
   );
+  vm.runInContext(pie+'\nthis.fx.pieDataFor=pieDataFor;',context);
   return context;
 }
 test('historical USD and AED values retain their recorded rates',()=>{
@@ -184,4 +185,14 @@ test('rate fallback avoids invalid current rates; JPY is never double converted'
   c.data.rates.USD=-1;
   assert.equal(c.fx.toJPY(e,'2026-11'),1500000);
   assert.equal(c.fx.toJPY(c.data.entries[2],'2026-11'),500000);
+});
+
+test('pie chart totals use current rates and historical pies keep old rates',()=>{
+  const c=makeFxContext();
+  const current=c.fx.pieDataFor('2026-11','晴太');
+  const historical=c.fx.pieDataFor('2026-10','晴太');
+  assert.equal(current.total,2050000);
+  assert.equal(historical.total,2000000);
+  assert.equal(current.rows.find(x=>x.label==='外貨').amount,1550000);
+  assert.equal(historical.rows.find(x=>x.label==='外貨').amount,1500000);
 });
