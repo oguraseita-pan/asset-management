@@ -2358,6 +2358,8 @@
             renderSyncBanner();
             return;
           }
+          // A locally staged write is not evidence that the server accepted it.
+          if(snap.metadata.hasPendingWrites) return;
           if(!snap.exists()){
             syncState.connected=false;
             // A cloud document disappearing after initialization is NOT a fresh family.
@@ -2400,13 +2402,24 @@
           }
           syncState.connected=true;
           syncState.connecting=false;
-          syncState.error="";
+          // A snapshot doesn't resolve an existing write conflict.
+          if(!syncState.conflict) syncState.error="";
           syncState.lastSyncedAt=Date.now();
           if(!syncState.ready){
             syncState.ready=true;
-            if(hasPendingSync() && readSyncBase()){
-              renderSyncStatus();
-              flushPendingSync();
+            if(hasPendingSync()){
+              if(readSyncBase()){
+                renderSyncStatus();
+                flushPendingSync();
+              }else{
+                // A user edited while connecting, before any verified server baseline.
+                // Never drop those edits or upload the whole stale state.
+                preserveLocalCopy("比較元のない同期前編集");
+                syncState.ready=false;
+                syncState.connected=false;
+                syncState.error="接続前に編集されたデータがあります。上書きせず保留しました。JSONバックアップを確認してください";
+                renderSyncStatus();renderSyncBanner();
+              }
             }else{
               if(JSON.stringify(data)!==JSON.stringify(cloudData)){
                 if(!preserveLocalCopy("クラウド同期前の端末データ")){
