@@ -768,6 +768,7 @@
               <div class="filters">
                 <button class="soft" type="button" onclick="connectSync(true)">接続して同期を開始</button>
                 <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="disconnectSync()">同期を解除</button>
+                <button class="ghost" type="button" style="border-radius:var(--radius-sm); padding:13px;" onclick="downloadSyncRecovery()">端末の退避データをダウンロード</button>
               </div>
 
               <div class="note-box">
@@ -976,41 +977,47 @@
       pushToCloud(false);
     }
 
-    // Merge two full states record-by-record so concurrent edits on different devices
-    // don't clobber each other. Newer record (by ts) wins; items present on only one side are kept.
-    function mergeStates(localD, remoteD){
-      const merged = JSON.parse(JSON.stringify(remoteD));
-      let localContributed = false;
-      const localNewer = (localD.updatedAt||0) > (remoteD.updatedAt||0);
-      const unionOrder = (a=[], b=[])=>{ const out=[...a]; b.forEach(x=>{ if(!out.includes(x)) out.push(x); }); return out; };
 
-      // categories: union so nothing added disappears
-      merged.mainCategories = localNewer ? unionOrder(localD.mainCategories, remoteD.mainCategories) : unionOrder(remoteD.mainCategories, localD.mainCategories);
-      merged.assetClasses   = localNewer ? unionOrder(localD.assetClasses,   remoteD.assetClasses)   : unionOrder(remoteD.assetClasses,   localD.assetClasses);
-
-      // rates / meta / memo: take from the newer overall state (whole-field)
-      if(localNewer){ merged.rates=localD.rates; merged.meta=localD.meta; merged.memoTree=localD.memoTree; localContributed=true; }
-      else { merged.rates=remoteD.rates; merged.meta=remoteD.meta; merged.memoTree=remoteD.memoTree; }
-
-      // accounts by id: higher ts wins; keep union; order from newer side then extras
-      const accMap=new Map();
-      (remoteD.accounts||[]).forEach(a=>accMap.set(a.id,a));
-      (localD.accounts||[]).forEach(a=>{ const r=accMap.get(a.id); if(!r){ accMap.set(a.id,a); localContributed=true; } else if((a.ts||0)>(r.ts||0)){ accMap.set(a.id,a); localContributed=true; } });
-      const orderSrc = (localNewer ? localD.accounts : remoteD.accounts) || [];
-      const ordered=[]; const seen=new Set();
-      orderSrc.forEach(a=>{ if(accMap.has(a.id)){ ordered.push(accMap.get(a.id)); seen.add(a.id); } });
-      [...accMap.values()].forEach(a=>{ if(!seen.has(a.id)){ ordered.push(a); seen.add(a.id); } });
-      merged.accounts=ordered;
-
-      // entries by month|owner|accountId: higher ts wins; union
-      const key=e=>`${e.month}|${e.owner}|${e.accountId}`;
-      const entMap=new Map();
-      (remoteD.entries||[]).forEach(e=>entMap.set(key(e),e));
-      (localD.entries||[]).forEach(e=>{ const k=key(e); const r=entMap.get(k); if(!r){ entMap.set(k,e); localContributed=true; } else if((e.ts||0)>(r.ts||0)){ entMap.set(k,e); localContributed=true; } });
-      merged.entries=[...entMap.values()];
-
-      merged.updatedAt = Math.max(localD.updatedAt||0, remoteD.updatedAt||0);
-      return { merged, localContributed };
+    // Rebase ONLY actual edits made on this device against the latest server state.
+    // Untouched old local records must never be reintroduced into the cloud.
+    // Deletions are intentional operations, not missing data to resurrect.
+    function rebaseUserChanges(base, localD, remoteD){
+      const clone=v=>JSON.parse(JSON.stringify(v));
+      const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+      const merged=clone(remoteD);
+      const conflicts=[];
+      const keyForEntry=e=>[e.month,e.owner,e.accountId].join('|');
+      function rebaseRecords(field, keyFor){
+        const before=new Map((base[field]||[]).map(x=>[keyFor(x),x]));
+        const after=new Map((localD[field]||[]).map(x=>[keyFor(x),x]));
+        const server=new Map((remoteD[field]||[]).map(x=>[keyFor(x),x]));
+        for(const key of new Set([...before.keys(),...after.keys()])){
+          const oldItem=before.get(key), newItem=after.get(key), serverItem=server.get(key);
+          if(same(oldItem,newItem)) continue;
+          // Concurrent change to the same item: stop rather than silently lose a family's edit.
+          if(!same(oldItem,serverItem) && !same(newItem,serverItem)){
+            conflicts.push(field+':'+key);
+            continue;
+          }
+          if(after.has(key)) server.set(key,clone(newItem));
+          else server.delete(key);
+        }
+        merged[field]=[...server.values()];
+      }
+      rebaseRecords('accounts',a=>a.id);
+      rebaseRecords('entries',keyForEntry);
+      const removedAccounts=new Set((base.accounts||[]).filter(a=>!(localD.accounts||[]).some(b=>a.id===b.id)).map(a=>a.id));
+      if(removedAccounts.size) merged.entries=merged.entries.filter(e=>!removedAccounts.has(e.accountId));
+      for(const field of ['rates','meta','mainCategories','assetClasses','memoTree']){
+        if(same(base[field],localD[field])) continue;
+        if(!same(base[field],remoteD[field]) && !same(localD[field],remoteD[field])){
+          conflicts.push(field);
+          continue;
+        }
+        merged[field]=clone(localD[field]);
+      }
+      merged.updatedAt=Date.now();
+      return { merged:normalize(merged), conflicts };
     }
 
     /* ---------- helpers ---------- */
@@ -1985,6 +1992,7 @@
       return normalize({
         rates: base.rates,            // keep this device's current rates
         meta: base.meta,
+        memoTree: incoming.memoTree || base.memoTree,
         mainCategories, assetClasses, accounts, entries
       });
     }
@@ -1999,8 +2007,7 @@
       data=load();
       activeDashboardMonth=latestSelectableMonth();
       activeListMonth=latestSelectableMonth();
-      render(); showTab("dashboard");
-      pushToCloud(true); // if synced, clear the cloud (and other devices) too
+      save(); showTab("dashboard"); // explicit reset, including deletions, is synced as a user edit
       toast("データをリセットしました");
     }
 
@@ -2154,161 +2161,317 @@
       toastTimer=setTimeout(()=>el.classList.remove("show"),2200);
     }
 
-    /* ---------- cloud sync (Firebase Firestore, realtime) ---------- */
+
+    /* ---------- cloud sync: server-authoritative initial load + transactional edits ---------- */
     const FIREBASE_VERSION = "12.14.0";
     const SYNC_KEY = "ogura-sync-config";
     const CLIENT_KEY = "ogura-client-id";
-    let syncState = { connected:false, connecting:false, applyingRemote:false, unsub:null, docRef:null, db:null };
+    const SYNC_BASE_KEY = "ogura-sync-last-server-v2";
+    const SYNC_PENDING_KEY = "ogura-sync-pending-v2";
+    const SYNC_RECOVERY_KEY = "ogura-sync-recovery-v2";
+    let syncState = {
+      connected:false, connecting:false, ready:false, applyingRemote:false,
+      unsub:null, docRef:null, db:null, runTransaction:null, generation:0,
+      marker:null, writePromise:null, localRevision:0, error:"", conflict:false,
+      seeding:false, lastSyncedAt:null
+    };
     let pushTimer = null;
 
     function clientId(){
-      let id = localStorage.getItem(CLIENT_KEY);
-      if(!id){ id = uid("dev"); localStorage.setItem(CLIENT_KEY, id); }
+      let id=localStorage.getItem(CLIENT_KEY);
+      if(!id){ id=uid("dev"); localStorage.setItem(CLIENT_KEY,id); }
       return id;
     }
     function getSyncConfig(){
-      try{ return JSON.parse(localStorage.getItem(SYNC_KEY) || "null"); }catch(e){ return null; }
+      try{ return JSON.parse(localStorage.getItem(SYNC_KEY)||"null"); }
+      catch(e){ return null; }
+    }
+    function syncMarker(config){
+      return config.firebaseConfig.projectId+":"+config.familyCode;
+    }
+    function readSyncBase(){
+      try{
+        const state=JSON.parse(localStorage.getItem(SYNC_BASE_KEY)||"null");
+        return state && state.marker===syncState.marker ? state.data : null;
+      }catch(e){ return null; }
+    }
+    function saveSyncBase(serverData){
+      localStorage.setItem(SYNC_BASE_KEY,JSON.stringify({marker:syncState.marker,data:serverData}));
+    }
+    function hasPendingSync(){
+      return !!syncState.marker && localStorage.getItem(SYNC_PENDING_KEY)===syncState.marker;
+    }
+    function preserveLocalCopy(reason){
+      try{
+        const copy={date:new Date().toISOString(),reason,marker:syncState.marker,data:JSON.parse(JSON.stringify(data))};
+        localStorage.setItem(SYNC_RECOVERY_KEY,JSON.stringify(copy));
+      }catch(err){ console.warn("Could not save local recovery copy",err); }
+    }
+    function downloadSyncRecovery(){
+      let recovery=null;
+      try{ recovery=JSON.parse(localStorage.getItem(SYNC_RECOVERY_KEY)||"null"); }catch(e){}
+      if(!recovery){ toast("退避されたデータはありません"); return; }
+      const blob=new Blob([JSON.stringify(recovery.data,null,2)],{type:"application/json"});
+      const url=URL.createObjectURL(blob);
+      const link=document.createElement("a");
+      link.href=url;
+      link.download="finance-local-recovery-"+recovery.date.slice(0,10)+".json";
+      link.click();
+      setTimeout(()=>URL.revokeObjectURL(url),2000);
+      toast("端末の退避データを書き出しました");
     }
     function generateFamilyCode(){
-      const rnd = (crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g,"") : (Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
-      document.getElementById("syncFamilyCode").value = "ogura-" + rnd.slice(0,16);
+      const rnd=(crypto&&crypto.randomUUID)?crypto.randomUUID().replace(/-/g,""):(Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
+      document.getElementById("syncFamilyCode").value="ogura-"+rnd.slice(0,16);
     }
     function parseFirebaseConfig(text){
       if(!text) return null;
-      let t = text.trim();
-      const s = t.indexOf("{"), e = t.lastIndexOf("}");
-      if(s<0 || e<0) return null;
-      t = t.slice(s, e+1);
-      t = t.replace(/'/g, '"');                          // single -> double quotes
-      t = t.replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g, '$1"$2":'); // quote unquoted keys
-      t = t.replace(/,(\s*[}\]])/g, "$1");               // trailing commas
+      let t=text.trim();
+      const s=t.indexOf("{"),e=t.lastIndexOf("}");
+      if(s<0||e<0) return null;
+      t=t.slice(s,e+1).replace(/'/g,'"').replace(/([{,]\s*)([A-Za-z0-9_]+)\s*:/g,'$1"$2":').replace(/,(\s*[}\]])/g,"$1");
       try{ return JSON.parse(t); }catch(err){ return null; }
     }
-
-    function renderSyncStatus(msg, kind){
-      const el = document.getElementById("syncStatus");
+    function renderSyncStatus(message){
+      const el=document.getElementById("syncStatus");
       if(!el) return;
-      const cfg = getSyncConfig();
-      if(msg){ el.innerHTML = msg; return; }
-      if(syncState.connected && cfg){
-        el.innerHTML = `<strong style="color:var(--up)">接続済み</strong> ・ 家族コード：${cfg.familyCode}<br>入力・編集は自動で同期されます。`;
-      } else if(cfg){
-        el.innerHTML = `設定は保存済みですが未接続です。「接続して同期を開始」を押してください。`;
-      } else {
-        el.innerHTML = `未設定です。下のFirebase設定と家族コードを入れて接続すると、2台でリアルタイムに同期します。`;
+      const cfg=getSyncConfig();
+      if(message){ el.textContent=message; return; }
+      if(syncState.conflict){
+        el.textContent="同じ項目の同時変更を検出しました。上書きを停止しています。退避データをダウンロードして内容を確認してください。";
+      }else if(syncState.error){
+        el.textContent="同期が完了していません："+syncState.error+"。この端末の変更は保留されます。";
+      }else if(syncState.ready && syncState.connected && cfg){
+        el.textContent="クラウド同期済み ・ 家族コード："+cfg.familyCode+
+          " ・ 最終確認："+(syncState.lastSyncedAt?new Date(syncState.lastSyncedAt).toLocaleTimeString("ja-JP"):"確認中")+
+          (hasPendingSync()?" ・ 変更を送信中":"");
+      }else if(syncState.connecting){
+        el.textContent="クラウドの最新データを確認中です。";
+      }else if(cfg && cfg.enabled){
+        el.textContent="クラウド未接続です。端末の古いデータは自動送信されません。同期設定を確認してください。";
+      }else if(cfg){
+        el.textContent="同期を解除しています。";
+      }else{
+        el.textContent="未設定です。同じFirebase設定と家族コードで接続するとデータを同期します。";
       }
     }
-
-    async function connectSync(fromButton){
-      let familyCode, firebaseConfig;
-      const saved = getSyncConfig();
-      if(fromButton){
-        familyCode = (document.getElementById("syncFamilyCode").value || "").trim();
-        firebaseConfig = parseFirebaseConfig(document.getElementById("syncConfig").value);
-        if(!familyCode){ toast("家族コードを入力してください。"); return; }
-        if(!firebaseConfig || !firebaseConfig.projectId){ toast("Firebase設定を正しく貼り付けてください。"); return; }
-        localStorage.setItem(SYNC_KEY, JSON.stringify({ familyCode, firebaseConfig, enabled:true }));
-      } else if(saved && saved.enabled){
-        familyCode = saved.familyCode; firebaseConfig = saved.firebaseConfig;
-      } else {
-        return;
-      }
-
-      renderSyncStatus(`接続中…`);
-      syncState.connecting = true;
-      renderSyncBanner();
-      try{
-        const [{ initializeApp, getApps, getApp }, { getFirestore, doc, setDoc, onSnapshot }, { getAuth, signInAnonymously }] = await Promise.all([
-          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
-          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`),
-          import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-auth.js`)
-        ]);
-        const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
-        try{ await signInAnonymously(getAuth(app)); }catch(authErr){ /* auth may be disabled; continue, rules may allow */ }
-        const db = getFirestore(app);
-        const docRef = doc(db, "families", familyCode);
-
-        if(syncState.unsub){ syncState.unsub(); syncState.unsub = null; }
-        syncState.db = db; syncState.docRef = docRef;
-
-        // store the setDoc reference for pushes
-        syncState._setDoc = setDoc;
-
-        syncState.unsub = onSnapshot(docRef, (snap)=>{
-          if(!snap.exists()){
-            pushToCloud(true); // seed the cloud with local data
-            return;
-          }
-          const remote = snap.data();
-          if(!remote) return;
-          let payload;
-          try{ payload = JSON.parse(remote.data); }catch(e){ return; }
-          if(!payload || !Array.isArray(payload.entries)) return;
-          if(remote.writerId === clientId()){
-            // our own echo — only act if local has unpushed newer edits (e.g. made offline)
-            if((data.updatedAt||0) > (remote.updatedAt||0)) pushToCloud(true);
-            return;
-          }
-          syncState.applyingRemote = true;
-          const remoteD = normalize(payload);
-          const { merged, localContributed } = mergeStates(data, remoteD);
-          data = merged;
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-          activeDashboardMonth = latestSelectableMonth();
-          activeListMonth = latestSelectableMonth();
-          render();
-          syncState.applyingRemote = false;
-          // if our local had newer records than remote, push the merged result so all devices converge
-          if(localContributed) pushToCloud(true);
-          toast("同期しました");
-        }, (err)=>{
-          syncState.connected = false;
-          syncState.connecting = false;
-          renderSyncStatus(`<strong style="color:var(--down)">同期エラー</strong>：${(err && err.code) || "接続できませんでした"}。Firebase設定・Firestoreの作成・ルールを確認してください。`);
-          renderSyncBanner();
-        });
-
-        syncState.connected = true;
-        syncState.connecting = false;
-        renderSyncStatus();
-        renderSyncBanner();
-        if(fromButton){ toast("同期を開始しました"); toggleSyncDetails(false); }
-        // NOTE: do not push local up on connect — the first snapshot merges remote+local,
-        // and pushes back only if local has newer records (prevents stale device from clobbering).
-      }catch(err){
-        syncState.connected = false;
-        syncState.connecting = false;
-        renderSyncStatus(`<strong style="color:var(--down)">同期エラー</strong>：SDKを読み込めませんでした。通信環境を確認してください。`);
-        renderSyncBanner();
-      }
-    }
-
-    function disconnectSync(){
-      if(syncState.unsub){ syncState.unsub(); syncState.unsub = null; }
-      syncState.connected = false;
-      const cfg = getSyncConfig();
-      if(cfg){ cfg.enabled = false; localStorage.setItem(SYNC_KEY, JSON.stringify(cfg)); }
+    function applyServerState(incoming){
+      syncState.applyingRemote=true;
+      data=normalize(JSON.parse(JSON.stringify(incoming)));
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+      saveSyncBase(data);
+      activeDashboardMonth=latestSelectableMonth();
+      activeListMonth=latestSelectableMonth();
+      render();
+      syncState.applyingRemote=false;
+      syncState.lastSyncedAt=Date.now();
       renderSyncStatus();
       renderSyncBanner();
+    }
+    async function connectSync(fromButton){
+      const saved=getSyncConfig();
+      let familyCode, firebaseConfig;
+      if(fromButton){
+        familyCode=(document.getElementById("syncFamilyCode").value||"").trim();
+        firebaseConfig=parseFirebaseConfig(document.getElementById("syncConfig").value);
+        if(!familyCode){ toast("家族コードを入力してください。"); return; }
+        if(!firebaseConfig||!firebaseConfig.projectId){ toast("Firebase設定が正しくありません。"); return; }
+        localStorage.setItem(SYNC_KEY,JSON.stringify({familyCode,firebaseConfig,enabled:true}));
+      }else if(saved && saved.enabled){
+        familyCode=saved.familyCode;firebaseConfig=saved.firebaseConfig;
+      }else return;
+      const gen=++syncState.generation;
+      clearTimeout(pushTimer);
+      if(syncState.unsub){ syncState.unsub();syncState.unsub=null; }
+      syncState.connected=false;
+      syncState.connecting=true;
+      syncState.ready=false;
+      syncState.seeding=false;
+      syncState.error="";
+      syncState.conflict=false;
+      syncState.marker=syncMarker({familyCode,firebaseConfig});
+      renderSyncStatus();
+      renderSyncBanner();
+      try{
+        const [{initializeApp,getApps},{getFirestore,doc,runTransaction,onSnapshot},{getAuth,signInAnonymously}]=await Promise.all([
+          import("https://www.gstatic.com/firebasejs/"+FIREBASE_VERSION+"/firebase-app.js"),
+          import("https://www.gstatic.com/firebasejs/"+FIREBASE_VERSION+"/firebase-firestore.js"),
+          import("https://www.gstatic.com/firebasejs/"+FIREBASE_VERSION+"/firebase-auth.js")
+        ]);
+        if(gen!==syncState.generation) return;
+        const appName="ogura-finance-"+firebaseConfig.projectId;
+        const app=getApps().find(a=>a.name===appName)||initializeApp(firebaseConfig,appName);
+        try{ await signInAnonymously(getAuth(app)); }
+        catch(authErr){ console.warn("Firebase anonymous auth unavailable",authErr); }
+        if(gen!==syncState.generation) return;
+        const db=getFirestore(app);
+        const docRef=doc(db,"families",familyCode);
+        syncState.db=db;syncState.docRef=docRef;syncState.runTransaction=runTransaction;
+
+        syncState.unsub=onSnapshot(docRef,{includeMetadataChanges:true},async snap=>{
+          if(gen!==syncState.generation) return;
+          if(snap.metadata.fromCache){
+            syncState.connected=false;
+            renderSyncStatus("サーバー接続を確認中です。端末内のデータはクラウドへ送信しません。");
+            renderSyncBanner();
+            return;
+          }
+          if(!snap.exists()){
+            syncState.connected=false;
+            if(!fromButton){
+              syncState.connecting=false;
+              syncState.error="クラウドに保存データが見つかりません。設定画面で接続を確認してください";
+              renderSyncStatus();renderSyncBanner();
+              return;
+            }
+            if(syncState.seeding) return;
+            syncState.seeding=true;
+            try{
+              const firstData=JSON.parse(JSON.stringify(data));
+              await runTransaction(db,async tx=>{
+                const check=await tx.get(docRef);
+                if(!check.exists()) tx.set(docRef,{data:JSON.stringify(firstData),writerId:clientId(),updatedAt:Date.now()});
+              });
+            }catch(err){
+              syncState.error="クラウドの初期化に失敗："+(err.code||err.message);
+              syncState.connecting=false;
+              renderSyncStatus();renderSyncBanner();
+            }finally{syncState.seeding=false;}
+            return;
+          }
+          const remote=snap.data();
+          let cloudData;
+          try{
+            cloudData=JSON.parse(remote.data);
+            if(!cloudData||!Array.isArray(cloudData.entries)||!Array.isArray(cloudData.accounts)) throw Error("invalid data");
+            cloudData=normalize(cloudData);
+          }catch(e){
+            syncState.error="クラウドデータの形式が不正です（上書きせず停止）";
+            syncState.connecting=false;syncState.connected=false;
+            renderSyncStatus();renderSyncBanner();return;
+          }
+          syncState.connected=true;
+          syncState.connecting=false;
+          syncState.error="";
+          syncState.lastSyncedAt=Date.now();
+          if(!syncState.ready){
+            syncState.ready=true;
+            if(hasPendingSync() && readSyncBase()){
+              renderSyncStatus();
+              flushPendingSync();
+            }else{
+              if(JSON.stringify(data)!==JSON.stringify(cloudData)){
+                preserveLocalCopy("クラウド同期前の端末データ");
+                toast("クラウドの最新データを取得しました（古い端末データは退避）");
+              }
+              localStorage.removeItem(SYNC_PENDING_KEY);
+              applyServerState(cloudData);
+            }
+          }else if(hasPendingSync() || syncState.writePromise){
+            // A remote event must not erase unsent local edits.
+            renderSyncStatus();
+            if(!syncState.writePromise && !syncState.conflict) flushPendingSync();
+          }else{
+            applyServerState(cloudData);
+          }
+          renderSyncBanner();
+        },err=>{
+          if(gen!==syncState.generation) return;
+          syncState.connected=false;syncState.connecting=false;
+          syncState.error=(err&&err.code)||"クラウドに接続できません";
+          renderSyncStatus();renderSyncBanner();
+        });
+        renderSyncStatus();
+        if(fromButton){ toggleSyncDetails(false); }
+      }catch(err){
+        if(gen!==syncState.generation) return;
+        syncState.connected=false;syncState.connecting=false;
+        syncState.error="Firebaseの読み込み・認証に失敗："+(err.message||"通信エラー");
+        renderSyncStatus();renderSyncBanner();
+      }
+    }
+    function disconnectSync(){
+      ++syncState.generation;
+      clearTimeout(pushTimer);
+      if(syncState.unsub){syncState.unsub();syncState.unsub=null;}
+      syncState.connected=false;syncState.connecting=false;syncState.ready=false;
+      syncState.error="";syncState.conflict=false;
+      const cfg=getSyncConfig();
+      if(cfg){cfg.enabled=false;localStorage.setItem(SYNC_KEY,JSON.stringify(cfg));}
+      renderSyncStatus();renderSyncBanner();
       toast("同期を解除しました");
     }
-
+    // Only save() or an explicit reset calls this; loading cached old PC data never does.
     function pushToCloud(immediate){
-      if(!syncState.connected || !syncState.docRef || !syncState._setDoc) return;
-      if(syncState.applyingRemote) return;
-      const doPush = async ()=>{
-        try{
-          await syncState._setDoc(syncState.docRef, {
-            data: JSON.stringify(data),
-            writerId: clientId(),
-            updatedAt: Date.now()
-          });
-        }catch(e){ /* network/permission errors surfaced via onSnapshot error */ }
-      };
+      const cfg=getSyncConfig();
+      if(!cfg||!cfg.enabled||syncState.applyingRemote) return;
+      const marker=syncMarker(cfg);
+      localStorage.setItem(SYNC_PENDING_KEY,marker);
+      syncState.localRevision++;
+      syncState.error="";syncState.conflict=false;
       clearTimeout(pushTimer);
-      if(immediate) doPush();
-      else pushTimer = setTimeout(doPush, 700); // debounce rapid edits
+      if(!syncState.ready){renderSyncBanner();return;}
+      if(immediate) flushPendingSync();
+      else pushTimer=setTimeout(flushPendingSync,700);
+      renderSyncStatus();
     }
+    function flushPendingSync(){
+      if(!syncState.ready||!syncState.connected||!syncState.runTransaction||
+         !hasPendingSync()||syncState.writePromise||syncState.conflict) return;
+      const base=readSyncBase();
+      if(!base){
+        syncState.error="変更の比較元が見つかりません。自動上書きを停止しました";
+        preserveLocalCopy("同期の比較元データなし");
+        renderSyncStatus();renderSyncBanner();return;
+      }
+      const draft=JSON.parse(JSON.stringify(data));
+      const revision=syncState.localRevision;
+      syncState.writePromise=(async()=>{
+        const merged=await syncState.runTransaction(syncState.db,async transaction=>{
+          const snap=await transaction.get(syncState.docRef);
+          if(!snap.exists()) throw Error("クラウドデータが消えています");
+          let remoteD;
+          try{ remoteD=normalize(JSON.parse(snap.data().data)); }
+          catch(e){ throw Error("クラウドデータの解析に失敗"); }
+          const result=rebaseUserChanges(base,draft,remoteD);
+          if(result.conflicts.length){
+            const err=Error("同じ項目が別端末でも変更されました："+result.conflicts.slice(0,3).join(", "));
+            err.syncConflict=true;throw err;
+          }
+          transaction.set(syncState.docRef,{data:JSON.stringify(result.merged),writerId:clientId(),updatedAt:Date.now()});
+          return result.merged;
+        });
+        if(syncState.localRevision===revision){
+          localStorage.removeItem(SYNC_PENDING_KEY);
+          applyServerState(merged);
+        }else{
+          // Further local edits happened while the transaction was in flight.
+          const newer=rebaseUserChanges(draft,data,merged);
+          if(newer.conflicts.length) throw Error("送信中の追加編集が競合しました");
+          saveSyncBase(merged);
+          data=newer.merged;
+          localStorage.setItem(STORAGE_KEY,JSON.stringify(data));
+          render();
+        }
+        syncState.error="";
+        syncState.conflict=false;
+        renderSyncStatus();renderSyncBanner();
+      })().catch(err=>{
+        syncState.error=err.message||"変更を送信できません";
+        syncState.conflict=!!err.syncConflict;
+        if(syncState.conflict) preserveLocalCopy("同時編集の競合");
+        renderSyncStatus();renderSyncBanner();
+      }).finally(()=>{
+        syncState.writePromise=null;
+        if(hasPendingSync()&&!syncState.conflict&&!syncState.error){
+          clearTimeout(pushTimer);
+          pushTimer=setTimeout(flushPendingSync,100);
+        }
+      });
+    }
+    window.addEventListener("online",()=>{
+      if(syncState.ready&&!syncState.conflict) flushPendingSync();
+    });
 
     function toggleRegDetails(force){
       const el=document.getElementById("regDetails");
@@ -2620,13 +2783,16 @@
     function renderSyncBanner(){
       const el = document.getElementById("syncBanner");
       if(!el) return;
-      const cfg = getSyncConfig();
-      // show only when sync was set up & enabled but not currently connected
-      if(cfg && cfg.enabled && !syncState.connected && !syncState.connecting){
-        el.style.display = "flex";
-        el.innerHTML = `<div><div>同期が接続されていません</div><div class="b-sub">この端末の変更が相手に届きません。タップして設定を開き、再接続してください。</div></div>`;
-      } else {
-        el.style.display = "none";
+      const cfg=getSyncConfig();
+      if(cfg && cfg.enabled && (!syncState.connected || hasPendingSync() || syncState.error || syncState.conflict)){
+        el.style.display="flex";
+        el.textContent=syncState.conflict
+          ? "同時編集の競合を検出しました。データの上書きを停止しています。設定で退避データを確認してください。"
+          : (syncState.error || !syncState.connected)
+            ? "クラウド同期が完了していません。設定から接続状態を確認してください。"
+            : "端末の変更をクラウドに送信中です。";
+      }else{
+        el.style.display="none";
       }
     }
 
