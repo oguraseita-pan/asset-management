@@ -2220,13 +2220,28 @@
     function preserveLocalCopy(reason){
       try{
         const copy={date:new Date().toISOString(),reason,marker:syncState.marker,data:JSON.parse(JSON.stringify(data))};
-        localStorage.setItem(SYNC_RECOVERY_KEY,JSON.stringify(copy));
+        const prior=JSON.parse(localStorage.getItem(SYNC_RECOVERY_KEY)||"[]");
+        const copies=Array.isArray(prior)?prior:(prior?[prior]:[]);
+        if(!copies.some(c=>JSON.stringify(c.data)===JSON.stringify(copy.data))){
+          copies.push(copy);
+          localStorage.setItem(SYNC_RECOVERY_KEY,JSON.stringify(copies.slice(-4)));
+        }
       }catch(err){ console.warn("Could not save local recovery copy",err); }
     }
     function downloadSyncRecovery(){
-      let recovery=null;
-      try{ recovery=JSON.parse(localStorage.getItem(SYNC_RECOVERY_KEY)||"null"); }catch(e){}
-      if(!recovery){ toast("退避されたデータはありません"); return; }
+      let saved=null;
+      try{ saved=JSON.parse(localStorage.getItem(SYNC_RECOVERY_KEY)||"null"); }catch(e){}
+      const copies=Array.isArray(saved)?saved:(saved?[saved]:[]);
+      if(!copies.length){ toast("退避されたデータはありません"); return; }
+      let index=copies.length-1;
+      if(copies.length>1){
+        const options=copies.map((c,i)=>(i+1)+": "+c.date.slice(0,16)+" "+c.reason).join("\\n");
+        const answer=prompt("書き出す退避データの番号を選んでください：\\n"+options,String(copies.length));
+        if(answer===null) return;
+        index=Number(answer)-1;
+        if(!Number.isInteger(index)||index<0||index>=copies.length){toast("番号が正しくありません");return;}
+      }
+      const recovery=copies[index];
       const blob=new Blob([JSON.stringify(recovery.data,null,2)],{type:"application/json"});
       const url=URL.createObjectURL(blob);
       const link=document.createElement("a");
@@ -2336,6 +2351,12 @@
           }
           if(!snap.exists()){
             syncState.connected=false;
+            // A cloud document disappearing after initialization is NOT a fresh family.
+            // Never recreate it from a potentially stale device.
+            if(syncState.ready){
+              syncState.error="クラウドデータが見つかりません。自動復元を停止しました";
+              renderSyncStatus();renderSyncBanner();return;
+            }
             if(!fromButton){
               syncState.connecting=false;
               syncState.error="クラウドに保存データが見つかりません。設定画面で接続を確認してください";
@@ -2390,7 +2411,9 @@
             renderSyncStatus();
             if(!syncState.writePromise && !syncState.conflict) flushPendingSync();
           }else{
-            applyServerState(cloudData);
+            // Metadata-only events should not rerender the forms or interrupt typing.
+            if(JSON.stringify(data)!==JSON.stringify(cloudData)) applyServerState(cloudData);
+            else{ saveSyncBase(cloudData); renderSyncStatus(); }
           }
           renderSyncBanner();
         },err=>{
