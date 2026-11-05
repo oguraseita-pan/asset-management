@@ -1357,7 +1357,7 @@
     }
     function pieDataFor(month, owner){
       const entries=totalsForSnapshot(month, owner).entries.filter(e=>e.type==="asset");
-      const byClass={};
+      const byClass=Object.create(null); // user-created class names must not collide with object prototype keys
       entries.forEach(e=>{ byClass[e.assetClass]=(byClass[e.assetClass]||0)+toJPY(e); });
       const total=Object.values(byClass).reduce((s,v)=>s+v,0);
       if(total<=0) return { rows:[], total:0 };
@@ -2222,11 +2222,20 @@
         const copy={date:new Date().toISOString(),reason,marker:syncState.marker,data:JSON.parse(JSON.stringify(data))};
         const prior=JSON.parse(localStorage.getItem(SYNC_RECOVERY_KEY)||"[]");
         const copies=Array.isArray(prior)?prior:(prior?[prior]:[]);
-        if(!copies.some(c=>JSON.stringify(c.data)===JSON.stringify(copy.data))){
-          copies.push(copy);
-          localStorage.setItem(SYNC_RECOVERY_KEY,JSON.stringify(copies.slice(-4)));
+        if(copies.some(c=>JSON.stringify(c.data)===JSON.stringify(copy.data))) return true;
+        copies.push(copy);
+        // Older recovery versions can be discarded if the browser storage is full.
+        while(copies.length){
+          try{
+            localStorage.setItem(SYNC_RECOVERY_KEY,JSON.stringify(copies.slice(-4)));
+            return true;
+          }catch(storageError){
+            if(copies.length===1) throw storageError;
+            copies.shift();
+          }
         }
       }catch(err){ console.warn("Could not save local recovery copy",err); }
+      return false;
     }
     function downloadSyncRecovery(){
       let saved=null;
@@ -2400,7 +2409,13 @@
               flushPendingSync();
             }else{
               if(JSON.stringify(data)!==JSON.stringify(cloudData)){
-                preserveLocalCopy("クラウド同期前の端末データ");
+                if(!preserveLocalCopy("クラウド同期前の端末データ")){
+                  // Do not destroy stale local data if no safety copy can be written.
+                  syncState.ready=false;
+                  syncState.connected=false;
+                  syncState.error="古い端末データを退避できません。先にJSONバックアップを書き出してください";
+                  renderSyncStatus();renderSyncBanner();return;
+                }
                 toast("クラウドの最新データを取得しました（古い端末データは退避）");
               }
               localStorage.removeItem(SYNC_PENDING_KEY);
