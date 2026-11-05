@@ -1045,9 +1045,19 @@
       if(c==="USD") return `$${Number(v).toLocaleString("en-US")}`;
       return Number(v).toLocaleString();
     }
-    function toJPY(entry){
-      const rate = (typeof entry.rate === "number" && entry.rate > 0) ? entry.rate : (data.rates[entry.currency] || 1);
-      return Number(entry.amount) * rate;
+    // Past snapshots retain each entry's rate; the current/future snapshot uses
+    // the latest configured rate, even when the balance was recorded months ago.
+    // This is display-only: historic amounts and entry.rate are never changed.
+    function isCurrentValuationMonth(month){
+      return !!month && compareMonth(month,currentMonthStr())>=0;
+    }
+    function toJPY(entry,valuationMonth=null){
+      if(entry.currency==="JPY") return Number(entry.amount);
+      const recordedRate=Number(entry.rate)>0 ? Number(entry.rate) : 1;
+      const configuredRate=Number(data.rates?.[entry.currency]);
+      const rate=isCurrentValuationMonth(valuationMonth) && Number.isFinite(configuredRate) && configuredRate>0
+        ? configuredRate : recordedRate;
+      return Number(entry.amount)*rate;
     }
     function accountOwners(acc){ return Array.isArray(acc.owners) && acc.owners.length ? acc.owners : ["晴太","香花"]; }
     function ownerTagLabel(owners){ const o = (owners||["晴太","香花"]); return o.length>=2 ? "共通" : o[0]; }
@@ -1171,8 +1181,8 @@
     }
     function totalsForSnapshot(month, owner="all"){
       const entries = snapshotEntriesUpTo(month, owner);
-      const assets = entries.filter(e=>e.type==="asset").reduce((s,e)=>s+toJPY(e),0);
-      const liabilities = entries.filter(e=>e.type==="liability").reduce((s,e)=>s+toJPY(e),0);
+      const assets = entries.filter(e=>e.type==="asset").reduce((s,e)=>s+toJPY(e,month),0);
+      const liabilities = entries.filter(e=>e.type==="liability").reduce((s,e)=>s+toJPY(e,month),0);
       return { assets, liabilities, net:assets-liabilities, entries };
     }
     function previousMonth(month){ const months=selectableMonths(); const idx=months.indexOf(month); return idx>0 ? months[idx-1] : null; }
@@ -1358,7 +1368,7 @@
     function pieDataFor(month, owner){
       const entries=totalsForSnapshot(month, owner).entries.filter(e=>e.type==="asset");
       const byClass=Object.create(null); // user-created class names must not collide with object prototype keys
-      entries.forEach(e=>{ byClass[e.assetClass]=(byClass[e.assetClass]||0)+toJPY(e); });
+      entries.forEach(e=>{ byClass[e.assetClass]=(byClass[e.assetClass]||0)+toJPY(e,month); });
       const total=Object.values(byClass).reduce((s,v)=>s+v,0);
       if(total<=0) return { rows:[], total:0 };
       const big=[]; let otherSum=0, otherClasses=[];
@@ -1458,11 +1468,11 @@
     }
 
     /* ---------- list ---------- */
-    function entryRowHtml(e){
+    function entryRowHtml(e,valuationMonth){
       const acc=accountById(e.accountId);
       const amt = e.currency==="JPY"
         ? formatAmount(e.amount,e.currency)
-        : `${formatAmount(e.amount,e.currency)}<small>${formatJPY(toJPY(e))}</small>`;
+        : `${formatAmount(e.amount,e.currency)}<small>${formatJPY(toJPY(e,valuationMonth))}</small>`;
       return `<div class="row tap-row" onclick="openAssetModal('${e.accountId}','${e.owner}')">
         <div><div class="row-title">${acc.name}</div>
           <div class="row-meta">${e.owner}・${e.assetClass}<br>最終更新 ${monthLabel(e.month)}${e.memo?" / "+e.memo:""}</div></div>
@@ -1477,7 +1487,7 @@
         .forEach(e=>{ (g[e.mainCategory]=g[e.mainCategory]||[]).push(e); });
       return g;
     }
-    function categoryBlocksHtml(entries){
+    function categoryBlocksHtml(entries,valuationMonth){
       const g=byMainCategory(entries);
       // order categories by registered mainCategories order
       const order=(data.mainCategories||[]);
@@ -1488,7 +1498,7 @@
       return cats.map(cat=>`
         <div style="margin-top:8px;">
           <div class="section-title">${cat}</div>
-          ${g[cat].map(entryRowHtml).join("")}
+          ${g[cat].map(e=>entryRowHtml(e,valuationMonth)).join("")}
         </div>`).join("");
     }
 
@@ -1505,7 +1515,7 @@
       if(!entries.length){ box.innerHTML=header+`<div class="empty">この時点までのデータがありません。</div>`; return; }
 
       const topLabel={asset:"資産", liability:"負債"};
-      const sumJPY=(arr)=>arr.reduce((s,e)=>s+toJPY(e),0);
+      const sumJPY=(arr)=>arr.reduce((s,e)=>s+toJPY(e,month),0);
       const totalRow=(label,arr)=>`<div class="row" style="border-top:2px solid var(--line-strong); border-bottom:none; margin-top:4px;"><div class="row-title">${label}合計</div><div class="row-amt num">${formatJPY(sumJPY(arr))}</div></div>`;
       let body="";
 
@@ -1520,7 +1530,7 @@
           ["asset","liability"].forEach(type=>{
             const te=pe.filter(e=>e.type===type);
             if(!te.length) return;
-            body+=`<div style="margin-top:6px;"><div class="group-title" style="font-size:14px; color:var(--muted);">${topLabel[type]}</div>${categoryBlocksHtml(te)}${totalRow(topLabel[type],te)}</div>`;
+            body+=`<div style="margin-top:6px;"><div class="group-title" style="font-size:14px; color:var(--muted);">${topLabel[type]}</div>${categoryBlocksHtml(te,month)}${totalRow(topLabel[type],te)}</div>`;
           });
           body+=`</div>`;
         });
@@ -1528,7 +1538,7 @@
         ["asset","liability"].forEach(type=>{
           const te=entries.filter(e=>e.type===type);
           if(!te.length) return;
-          body+=`<div class="group-block"><div class="group-title" style="font-size:15px;">${topLabel[type]}</div>${categoryBlocksHtml(te)}${totalRow(topLabel[type],te)}</div>`;
+          body+=`<div class="group-block"><div class="group-title" style="font-size:15px;">${topLabel[type]}</div>${categoryBlocksHtml(te,month)}${totalRow(topLabel[type],te)}</div>`;
         });
       }
       box.innerHTML=header+body;
@@ -2036,7 +2046,7 @@
       // build full lifetime values, then trim leading zeros (before the asset first appeared)
       let full = monthsAll.map(m=>{
         const item=snapshotEntriesUpTo(m,owner).find(e=>e.accountId===accountId);
-        return { month:m, value:item?toJPY(item):0 };
+        return { month:m, value:item?toJPY(item,m):0 };
       });
       const firstNonZero = full.findIndex(p=>p.value!==0);
       if(firstNonZero > 0) full = full.slice(firstNonZero);
@@ -2073,7 +2083,7 @@
       const latest=snapshotEntriesUpTo(month,owner).find(e=>e.accountId===accountId);
       document.getElementById("modalTitle").textContent=acc.name;
       document.getElementById("modalSubtitle").textContent=`${owner} ・ ${monthLabel(month)}時点 ・ 単体推移`;
-      const lv=latest?toJPY(latest):0;
+      const lv=latest?toJPY(latest,month):0;
       const lt=latest?(latest.currency==="JPY"?formatJPY(lv):`${formatAmount(latest.amount,latest.currency)} ／ ${formatJPY(lv)}`):"データなし";
       const tabs=[["3m","3ヶ月"],["6m","6ヶ月"],["1y","1年"],["3y","3年"],["5y","5年"],["all","全期間"]];
       document.getElementById("modalBody").innerHTML=`
@@ -2118,7 +2128,7 @@
     function classSeriesForRange(assetClass, owner, endMonth, range, classes=null){
       const months=selectableMonths().filter(m=>compareMonth(m,endMonth)<=0);
       let full=months.map(m=>{
-        const v=snapshotEntriesUpTo(m,owner).filter(e=>e.type==="asset"&&(classes?classes.includes(e.assetClass):e.assetClass===assetClass)).reduce((s,e)=>s+toJPY(e),0);
+        const v=snapshotEntriesUpTo(m,owner).filter(e=>e.type==="asset"&&(classes?classes.includes(e.assetClass):e.assetClass===assetClass)).reduce((s,e)=>s+toJPY(e,m),0);
         return { month:m, value:v };
       });
       const firstNonZero=full.findIndex(p=>p.value!==0);
