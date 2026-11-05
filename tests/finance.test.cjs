@@ -102,3 +102,86 @@ test('negative balances produce finite chart coordinates',()=>{
   assert.ok(svg.includes('<svg'));
   assert.ok(!svg.includes('NaN')&&!svg.includes('Infinity'));
 });
+
+function makeFxContext(){
+  const context={
+    data:{
+      rates:{JPY:1,USD:155,AED:42},
+      accounts:[
+        {id:'usd',name:'USD Account',currency:'USD'},
+        {id:'aed',name:'AED Debt',currency:'AED'},
+        {id:'yen',name:'JPY Account',currency:'JPY'}
+      ],
+      entries:[
+        {id:'usd-1',month:'2026-09',owner:'晴太',accountId:'usd',type:'asset',assetClass:'外貨',mainCategory:'外貨口座',currency:'USD',amount:10000,rate:150},
+        {id:'aed-1',month:'2026-09',owner:'香花',accountId:'aed',type:'liability',assetClass:'外貨',mainCategory:'負債',currency:'AED',amount:1000,rate:40},
+        {id:'yen-1',month:'2026-09',owner:'晴太',accountId:'yen',type:'asset',assetClass:'現金',mainCategory:'銀行',currency:'JPY',amount:500000,rate:1}
+      ]
+    },
+    currentMonthStr:()=>'2026-11',
+    compareMonth:(a,b)=>a.localeCompare(b),
+    selectableMonths:()=>['2026-09','2026-10','2026-11'],
+    formatJPY:n=>'¥'+Math.round(n).toLocaleString('ja-JP'),
+    formatAmount:(n,c)=>c+' '+n,
+    accountById:id=>({name:id}),
+    monthLabel:x=>x
+  };
+  vm.createContext(context);
+  const conversion=section('    function isCurrentValuationMonth(', '    function accountOwners(');
+  const snapshots=section('    function snapshotEntriesUpTo(', '    function previousMonth(');
+  const timeseries=section('    function chartSeriesForRange(', '    function createAreaSVG(');
+  const assetSeries=section('    function assetSeriesForAccount(', '    function renderAssetModalChart(');
+  const classSeries=section('    function classSeriesForRange(', '    function showClassTrend(');
+  const rowMarkup=section('    function entryRowHtml(', '    function accountOrderIndex(');
+  vm.runInContext(
+    conversion+snapshots+timeseries+assetSeries+classSeries+rowMarkup+
+    '\nthis.fx={toJPY,totalsForSnapshot,chartSeriesForRange,assetSeriesForAccount,classSeriesForRange,entryRowHtml}',
+    context
+  );
+  return context;
+}
+test('historical USD and AED values retain their recorded rates',()=>{
+  const c=makeFxContext();
+  const old=c.fx.totalsForSnapshot('2026-10');
+  assert.equal(old.assets,2000000); // 10,000 USD × 150 + ¥500,000
+  assert.equal(old.liabilities,40000); // AED 1,000 × 40
+  assert.equal(c.fx.totalsForSnapshot('2026-09').net,1960000);
+});
+test('current snapshot reprices carried-forward USD assets and AED liabilities without rewriting entries',()=>{
+  const c=makeFxContext();
+  const before=JSON.stringify(c.data.entries);
+  const today=c.fx.totalsForSnapshot('2026-11');
+  assert.equal(today.assets,2050000); // USD 10,000 × 155 + ¥500,000
+  assert.equal(today.liabilities,42000); // AED 1,000 × 42
+  assert.equal(today.net,2008000);
+  assert.equal(JSON.stringify(c.data.entries),before);
+});
+test('changing configured rates changes only the current valuation, not history',()=>{
+  const c=makeFxContext();
+  c.data.rates.USD=160;
+  c.data.rates.AED=43;
+  assert.equal(c.fx.totalsForSnapshot('2026-11').net,2057000);
+  assert.equal(c.fx.totalsForSnapshot('2026-10').net,1960000);
+});
+test('asset and class history use historical conversion except the present month',()=>{
+  const c=makeFxContext();
+  const accountSeries=c.fx.assetSeriesForAccount('usd','晴太','2026-11','all');
+  assert.deepEqual(Array.from(accountSeries,p=>p.value),[1500000,1500000,1550000]);
+  const classSeries=c.fx.classSeriesForRange('外貨','晴太','2026-11','all');
+  assert.deepEqual(Array.from(classSeries,p=>p.value),[1500000,1500000,1550000]);
+});
+test('list row currency equivalent uses the selected snapshot month',()=>{
+  const c=makeFxContext();
+  const usd=c.data.entries[0];
+  assert.ok(c.fx.entryRowHtml(usd,'2026-11').includes('¥1,550,000'));
+  assert.ok(c.fx.entryRowHtml(usd,'2026-10').includes('¥1,500,000'));
+  assert.ok(html.includes('categoryBlocksHtml(te,month)'),'list groups must receive selected month');
+  assert.ok(html.includes('s+toJPY(e,month)'),'list group totals must receive selected month');
+});
+test('rate fallback avoids invalid current rates; JPY is never double converted',()=>{
+  const c=makeFxContext();
+  const e=c.data.entries[0];
+  c.data.rates.USD=-1;
+  assert.equal(c.fx.toJPY(e,'2026-11'),1500000);
+  assert.equal(c.fx.toJPY(c.data.entries[2],'2026-11'),500000);
+});
